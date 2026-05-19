@@ -1,7 +1,7 @@
 ---
-description: Researcher v3 - Web research specialist using searxng and memini-ai.
+description: Researcher v3 - Web research specialist using kimi-k2.6:cloud (Ollama Cloud) with searxng and memini-ai.
 mode: primary
-model: minimax/MiniMax-M2.7
+model: ollama-cloud/kimi-k2.6:cloud
 steps: 50
 permission:
   edit: deny

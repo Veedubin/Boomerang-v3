@@ -1,7 +1,7 @@
 ---
-description: Boomerang Scraper v3 - Web research specialist.
+description: Boomerang Scraper v3 - Web research specialist using qwen3.5:cloud (Ollama Cloud).
 mode: primary
-model: minimax/MiniMax-M2.7
+model: ollama-cloud/qwen3.5:cloud
 steps: 40
 permission:
   edit: deny

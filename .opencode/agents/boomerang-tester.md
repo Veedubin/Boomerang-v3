@@ -1,7 +1,7 @@
 ---
-description: Boomerang Tester v3 - Testing specialist using memini-ai for test history.
+description: Boomerang Tester v3 - Testing specialist using deepseek-v4-flash:cloud (Ollama Cloud) with memini-ai for test history.
 mode: primary
-model: minimax/MiniMax-M2.7
+model: ollama-cloud/deepseek-v4-flash:cloud
 steps: 50
 permission:
   edit: allow

@@ -1,7 +1,7 @@
 ---
-description: Boomerang Handoff v3 - Session wrap-up using memini-ai for context preservation.
+description: Boomerang Handoff v3 - Session wrap-up using kimi-k2.6:cloud (Ollama Cloud) with memini-ai for context preservation.
 mode: primary
-model: kimi-for-coding/k2p6
+model: ollama-cloud/kimi-k2.6:cloud
 steps: 40
 permission:
   edit: allow

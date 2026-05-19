@@ -1,7 +1,7 @@
 ---
-description: Boomerang Coder v3 - Fast code generation using MiniMax M2.7 with memini-ai memory.
+description: Boomerang Coder v3 - Fast code generation using glm-5.1:cloud (Ollama Cloud) with memini-ai memory.
 mode: primary
-model: minimax/MiniMax-M2.7
+model: ollama-cloud/glm-5.1:cloud
 steps: 50
 permission:
   edit: allow

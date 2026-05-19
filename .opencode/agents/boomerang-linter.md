@@ -1,7 +1,7 @@
 ---
-description: Boomerang Linter v3 - Quality enforcement for boomerang-v3.
+description: Boomerang Linter v3 - Quality enforcement using qwen3-coder-next:cloud (Ollama Cloud) for boomerang-v3.
 mode: primary
-model: minimax/MiniMax-M2.7
+model: ollama-cloud/qwen3-coder-next:cloud
 steps: 30
 permission:
   edit: allow

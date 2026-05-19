@@ -1,7 +1,7 @@
 ---
-description: MCP Specialist v3 - MCP Protocol specialist for boomerang-v3.
+description: MCP Specialist v3 - MCP Protocol specialist using glm-5.1:cloud (Ollama Cloud) for boomerang-v3.
 mode: primary
-model: minimax/MiniMax-M2.7
+model: ollama-cloud/glm-5.1:cloud
 steps: 40
 permission:
   edit: allow

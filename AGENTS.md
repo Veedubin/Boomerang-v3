@@ -4,46 +4,48 @@
 
 > **Note**: Models are configurable. Use `install-agents.js --primary=<model> --secondary=<model>` to customize.
 
-| Agent | Skill | Default Model | Role |
-|-------|-------|-------|-------|
-| **boomerang** | boomerang-orchestrator | Gemini | 🎯 **Orchestrator** — Plans, coordinates, provides intelligent routing |
-| **boomerang-coder** | boomerang-coder | MiniMax M2.7 | 💻 **Fast code generation** — Write and modify code efficiently |
-| **boomerang-architect** | boomerang-architect | Gemini | 🏗️ **Design decisions** — Trade-off analysis and architecture |
-| **boomerang-explorer** | boomerang-explorer | MiniMax M2.7 | 🔍 **Codebase exploration** — Find files by name/glob |
-| **boomerang-tester** | boomerang-tester | MiniMax M2.7 | 🧪 **Testing specialist** — Unit/integration tests, verification |
-| **boomerang-linter** | boomerang-linter | MiniMax M2.7 | ✅ **Quality enforcement** — Lint, format, style consistency |
-| **boomerang-git** | boomerang-git | MiniMax M2.7 | 📦 **Version control** — Commits, branches, history discipline |
-| **boomerang-writer** | boomerang-writer | Gemini | 📝 **Documentation** — Markdown writing and documentation |
-| **boomerang-scraper** | boomerang-scraper | MiniMax M2.7 | 🌐 **Web scraping** — Research and information gathering |
-| **boomerang-release** | boomerang-release | MiniMax M2.7 | 🚀 **Release automation** — Version bump, changelog, publish |
-| **boomerang-agent-builder** | boomerang-agent-builder | MiniMax M2.7 | 🏗️ **Agent Builder** — Builds new skills and sub-agents from detected patterns |
-| **researcher** | researcher | MiniMax M2.7 | 🌐 **Web research** — Search, fetch, and synthesize online information |
-| **mcp-specialist** | mcp-specialist | MiniMax M2.7 | 🔌 **MCP Protocol** — Tool design, server debug |
+| Agent | Skill | Recommended Ollama Cloud Model | Technical Justification |
+|-------|-------|------------------------------|------------------------|
+| **boomerang** | boomerang-orchestrator | kimi-k2.6:cloud | Specifically built for swarm-based task orchestration and proactive autonomous delegation. |
+| **boomerang-coder** | boomerang-coder | glm-5.1:cloud | Flagship for agentic engineering; achieves SOTA on SWE-Bench Pro for complex, multi-file generation. |
+| **boomerang-architect** | boomerang-architect | deepseek-v4-pro:cloud | Offers frontier reasoning with dedicated "thinking modes" for analyzing complex architectural trade-offs. |
+| **boomerang-explorer** | boomerang-explorer | devstral-2:cloud | Explicitly designed to navigate codebases, trace dependencies, and map repository structures. |
+| **boomerang-tester** | boomerang-tester | deepseek-v4-flash:cloud | Massive 1M context window for ingesting deep error logs and codebase context quickly and efficiently. |
+| **boomerang-linter** | boomerang-linter | qwen3-coder-next:cloud | Highly optimized for agentic coding workflows; blazing fast for syntax formatting and style checks. |
+| **boomerang-git** | boomerang-git | minimax-m2.7:cloud | Fast and highly reliable for standard professional productivity and executing structured terminal commands. |
+| **boomerang-writer** | boomerang-writer | gemma4:cloud | Frontier-level instruction following; excels at translating technical logic into clean, readable Markdown. |
+| **boomerang-scraper** | boomerang-scraper | qwen3.5:cloud | Strong, lightweight generalist with excellent tool-use capabilities for reliable data extraction. |
+| **boomerang-release** | boomerang-release | devstral-small-2:cloud | Fast 24B model perfect for targeted automation tasks like bumping versions and summarizing changelogs. |
+| **boomerang-agent-builder** | boomerang-agent-builder | glm-5.1:cloud | Excels at long-horizon tasks and ambiguous problems; ideal for writing and optimizing new agent logic. |
+| **researcher** | researcher | kimi-k2.6:cloud | Advances practical capabilities in long-horizon research, data synthesis, and multi-step tool execution. |
+| **mcp-specialist** | mcp-specialist | glm-5.1:cloud | SOTA on Terminal-Bench 2.0; the most capable model for debugging servers and designing complex tool protocols. |
 
 | Skill | Purpose | Model |
 |-------|---------|-------|
-| **boomerang-init** | Initialize and personalize agents for a project | Gemini |
-| **boomerang-handoff** | Wrap-up session. Updates docs, saves context | Gemini |
-| **boomerang-agent-builder** | Build new skills and sub-agents from patterns | MiniMax M2.7 |
+| **boomerang-init** | Initialize and personalize agents for a project | kimi-k2.6:cloud |
+| **boomerang-handoff** | Wrap-up session. Updates docs, saves context | kimi-k2.6:cloud |
+| **boomerang-agent-builder** | Build new skills and sub-agents from patterns | glm-5.1:cloud |
 
 ## Agent Selection Guide
 
 | Task Type | → Primary Agent | Model |
 |-----------|------------------|-------|
-| Complex planning / orchestration | `boomerang` | Gemini |
-| Architecture / design decisions | `boomerang-architect` | Gemini |
-| Documentation writing | `boomerang-writer` | Gemini |
-| Session initialization | `boomerang-init` | Gemini |
-| Session wrap-up / handoff | `boomerang-handoff` | Gemini |
-| Skill/agent creation | `boomerang-agent-builder` | MiniMax M2.7 |
-| Fast code generation / bug fixes | `boomerang-coder` | MiniMax M2.7 |
-| Code exploration / finding files | `boomerang-explorer` | MiniMax M2.7 |
-| Writing / running tests | `boomerang-tester` | MiniMax M2.7 |
-| Linting / formatting | `boomerang-linter` | MiniMax M2.7 |
-| Git operations | `boomerang-git` | MiniMax M2.7 |
-| Web research / scraping | `boomerang-scraper` | MiniMax M2.7 |
-| MCP tool design / server debug | `mcp-specialist` | MiniMax M2.7 |
-| Release automation | `boomerang-release` | MiniMax M2.7 |
+| Complex planning / orchestration | `boomerang` | kimi-k2.6:cloud |
+| Architecture / design decisions | `boomerang-architect` | deepseek-v4-pro:cloud |
+| Documentation writing | `boomerang-writer` | gemma4:cloud |
+| Session initialization | `boomerang-init` | kimi-k2.6:cloud |
+| Session wrap-up / handoff | `boomerang-handoff` | kimi-k2.6:cloud |
+| Skill/agent creation | `boomerang-agent-builder` | glm-5.1:cloud |
+| Fast code generation / bug fixes | `boomerang-coder` | glm-5.1:cloud |
+| Code exploration / finding files | `boomerang-explorer` | devstral-2:cloud |
+| Writing / running tests | `boomerang-tester` | deepseek-v4-flash:cloud |
+| Linting / formatting | `boomerang-linter` | qwen3-coder-next:cloud |
+| Git operations | `boomerang-git` | minimax-m2.7:cloud |
+| Web research / scraping | `boomerang-scraper` | qwen3.5:cloud |
+| MCP tool design / server debug | `mcp-specialist` | glm-5.1:cloud |
+| Release automation | `boomerang-release` | devstral-small-2:cloud |
+
+> **Note**: User has Ollama Cloud with **3 concurrent model limit**. Models are configured via `install-agents.js --primary=<model> --secondary=<model>` or by editing `.opencode/opencode.json`.
 
 ### Orchestrator Permissions (v3.0.0)
 
@@ -328,6 +330,7 @@ IDLE → MEMORY_QUERY → SEQUENTIAL_THINK → PLAN → DELEGATE → GIT_CHECK �
 
 ## Review Notes
 
+- **2026-05-19**: Updated to Ollama Cloud models — All agents reassigned to Ollama Cloud models with 3 concurrent limit. Created `.opencode/opencode.json` with `ollama-cloud` provider. Provider ID: `ollama`, baseURL: `https://ollama.com/v1`.
 - **2026-05-18**: v3.0.0 RELEASED — memini-ai integration: Trust engine, knowledge graph, tiered loading. PostgreSQL with pgvector backend. 645 tests passing in memini-ai.
 - **2026-05-06**: v4.1.0 (boomerang-v2) — Protocol enforcement: MANDATORY. Parallel agent launching.
 - **2026-05-03**: v4.0.0 (boomerang-v2) — Orchestrator as pure decision layer, OpenCode handles execution.

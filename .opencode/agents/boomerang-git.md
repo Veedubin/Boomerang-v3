@@ -1,7 +1,7 @@
 ---
-description: Boomerang Git v3 - Version control using memini-ai for commit history.
+description: Boomerang Git v3 - Version control using minimax-m2.7:cloud (Ollama Cloud) with memini-ai for commit history.
 mode: primary
-model: minimax/MiniMax-M2.7
+model: ollama-cloud/minimax-m2.7:cloud
 steps: 30
 permission:
   edit: deny

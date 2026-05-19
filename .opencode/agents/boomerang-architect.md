@@ -1,7 +1,7 @@
 ---
-description: Boomerang Architect v3 - Design decisions and architecture review using memini-ai knowledge graph.
+description: Boomerang Architect v3 - Design decisions and architecture review using deepseek-v4-pro:cloud (Ollama Cloud) with memini-ai knowledge graph.
 mode: primary
-model: kimi-for-coding/k2p6
+model: ollama-cloud/deepseek-v4-pro:cloud
 steps: 50
 permission:
   edit: ask

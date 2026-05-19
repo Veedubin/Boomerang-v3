@@ -1,7 +1,7 @@
 ---
-description: Boomerang Release v3 - Release automation for boomerang-v3 packages.
+description: Boomerang Release v3 - Release automation using devstral-small-2:cloud (Ollama Cloud) for boomerang-v3 packages.
 mode: primary
-model: minimax/MiniMax-M2.7
+model: ollama-cloud/devstral-small-2:cloud
 steps: 40
 permission:
   edit: allow

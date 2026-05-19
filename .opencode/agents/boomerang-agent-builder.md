@@ -1,7 +1,7 @@
 ---
-description: Boomerang Agent Builder v3 - Builds new skills and sub-agents from detected patterns using memini-ai.
+description: Boomerang Agent Builder v3 - Builds new skills and sub-agents from detected patterns using glm-5.1:cloud (Ollama Cloud) with memini-ai.
 mode: primary
-model: minimax/MiniMax-M2.7
+model: ollama-cloud/glm-5.1:cloud
 steps: 50
 permission:
   edit: allow

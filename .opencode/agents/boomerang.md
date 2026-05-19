@@ -1,7 +1,7 @@
 ---
-description: Boomerang v3 Orchestrator - Main coordinator using memini-ai for memory with trust scoring and knowledge graph.
+description: Boomerang v3 Orchestrator - Main coordinator using memini-ai for memory with trust scoring and knowledge graph. Model: kimi-k2.6:cloud (Ollama Cloud).
 mode: primary
-model: kimi-for-coding/k2p6
+model: ollama-cloud/kimi-k2.6:cloud
 steps: 50
 permission:
   edit: ask
