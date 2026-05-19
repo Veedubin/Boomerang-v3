@@ -211,7 +211,7 @@ memini-ai includes a knowledge graph for tracking entities and relationships:
 
 ## Project-Specific Context
 
-This is Boomerang v3.0.0 — an orchestration plugin for OpenCode that provides intelligent routing and context, using memini-ai for memory with trust scoring, knowledge graph, and tiered loading.
+This is Boomerang-v3 — an orchestration plugin for OpenCode that provides intelligent routing and context, using memini-ai for memory with trust scoring, knowledge graph, and tiered loading.
 
 ## Agent Governance Rules (v3.0.0)
 

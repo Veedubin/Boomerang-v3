@@ -1,5 +1,5 @@
 /**
- * Boomerang v3.0.0 - OpenCode Plugin Interface
+ * Boomerang-v3 - OpenCode Plugin Interface
  * 
  * Self-contained plugin that integrates with OpenCode's plugin system.
  * Uses memini-ai for memory operations.
