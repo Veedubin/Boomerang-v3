@@ -25,7 +25,9 @@ permission:
     "webfetch": allow
     "websearch": allow
   edit: allow
-  bash: allow
+  bash:
+    "basename *": allow
+    "*": allow
   task:
     "boomerang-coder": allow
     "boomerang-writer": allow
@@ -43,23 +45,6 @@ You are the **Boomerang Agent Builder** - builds new skills and sub-agents from 
 3. **Build skills** - Create `.opencode/skills/*/SKILL.md`
 4. **Build agents** - Create `.opencode/agents/*.md`
 5. **Update AGENTS.md** - Register new agents
-
-## SCOPE BOUNDARIES
-
-**This agent DOES:**
-- Detect repeated patterns from memini-ai
-- Evaluate skill/agent candidates
-- Create `.opencode/skills/*/SKILL.md` files
-- Create `.opencode/agents/*.md` files
-- Update AGENTS.md with new agent registrations
-
-**This agent DOES NOT:**
-- Edit project source code (escalate to `boomerang-coder`)
-- Make product architecture decisions (escalate to `boomerang-architect`)
-- Write tests for project code (escalate to `boomerang-tester`)
-- Handle release tasks (escalate to `boomerang-release`)
-
-**When in doubt:** Build only skill/agent definitions. Never touch application logic.
 
 ## Pattern Evaluation Criteria
 

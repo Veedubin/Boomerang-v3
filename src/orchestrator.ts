@@ -34,6 +34,7 @@ import type {
   ConcurrencyConfig,
   SlotUsage,
 } from './types.js';
+import { TimeoutError } from './types.js';
 import {
   TaskLimiter,
   executeWithRetry,
@@ -126,6 +127,7 @@ export class BoomerangOrchestrator {
           maxRetries: this.config.maxRetries,
           baseDelayMs: this.config.retryBaseDelayMs,
           maxDelayMs: this.config.retryMaxDelayMs,
+          isRetryable: (err) => !(err instanceof TimeoutError),
         }
       );
       return retryResult;

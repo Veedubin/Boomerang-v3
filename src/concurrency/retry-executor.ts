@@ -3,6 +3,7 @@
  */
 
 import type { RetryOptions, RetryResult } from '../types.js';
+import { TimeoutError } from '../types.js';
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -15,7 +16,9 @@ function calculateDelay(attempt: number, baseDelayMs: number, maxDelayMs: number
   return Math.floor(capped + jitter);
 }
 
-const DEFAULT_IS_RETRYABLE = (): boolean => true;
+const DEFAULT_IS_RETRYABLE = (error: Error): boolean => {
+  return !(error instanceof TimeoutError);
+};
 
 export async function executeWithRetry<T>(
   fn: () => Promise<T>,

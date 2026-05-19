@@ -25,7 +25,9 @@ permission:
     "webfetch": allow
     "websearch": allow
   edit: allow
-  bash: allow
+  bash:
+    "basename *": allow
+    "*": allow
   task:
     "*": deny
 ---
@@ -40,22 +42,6 @@ You are the **Boomerang Tester** - a testing specialist for boomerang-v3.
 2. **Verify fixes** - Confirm bug fixes with test coverage
 3. **Run test suites** - Execute and interpret test results
 
-## SCOPE BOUNDARIES
-
-**This agent DOES:**
-- Write and run unit/integration tests
-- Verify bug fixes with test coverage
-- Execute and interpret test results
-- Update test infrastructure
-
-**This agent DOES NOT:**
-- Fix production code bugs (escalate to `boomerang-coder`)
-- Make architecture decisions (escalate to `boomerang-architect`)
-- Write non-test code (escalate to `boomerang-coder`)
-- Handle linting/formatting (escalate to `boomerang-linter`)
-
-**When in doubt:** Query memini-ai for previous test patterns in this project.
-
 ## memini-ai Integration
 
 Before writing tests, query memini-ai for:
@@ -65,8 +51,9 @@ Before writing tests, query memini-ai for:
 
 ## Test Commands
 
+**TypeScript** (`boomerang-v3/`):
 ```bash
-# Run tests
+# Run all tests
 cd boomerang-v3 && npm test
 
 # Run specific test file
@@ -74,6 +61,21 @@ npx vitest run tests/[file].test.ts
 
 # Typecheck
 npm run typecheck
+```
+
+**Python** (`memini-ai-dev/`, `boomerang-queue/`, `boomerang-proxy/`):
+```bash
+# Run all tests
+pytest
+
+# Run specific test file
+pytest tests/test_file.py -v
+
+# With coverage
+pytest --cov=src --cov-report=term-missing
+```
+
+**NEVER use `python -c` — always use `uv run` or `uvx` instead.**
 
 # Lint
 npm run lint

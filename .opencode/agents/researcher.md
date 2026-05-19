@@ -35,6 +35,8 @@ permission:
     "find *": allow
     "cd *": allow
     "echo *": allow
+    "which *": allow
+    "basename *": allow
   webfetch: allow
   websearch: allow
   task:
@@ -57,22 +59,6 @@ You are the **Researcher** - web research specialist for boomerang-v3.
 - `memini-ai-dev_query_memories` - Check existing knowledge
 - `memini-ai-dev_add_memory` - Save research findings
 - `memini-ai-dev_query_kg` - Query knowledge graph
-
-## SCOPE BOUNDARIES
-
-**This agent DOES:**
-- Search the web with searxng
-- Retrieve and analyze web content
-- Synthesize findings into coherent research
-- Save research to memini-ai with `project` tag
-
-**This agent DOES NOT:**
-- Edit code (escalate to `boomerang-coder`)
-- Make architecture decisions (escalate to `boomerang-architect`)
-- Write documentation (escalate to `boomerang-writer`)
-- Analyze project source code (escalate to `boomerang-architect`)
-
-**When in doubt:** Return research findings. Let another agent act on them.
 
 ## Research Process
 

@@ -25,7 +25,10 @@ permission:
     "webfetch": allow
     "websearch": allow
   edit: allow
-  bash: allow
+  bash:
+    "basename *": allow
+    "diff *": allow
+    "*": allow
   task:
     "*": deny
 ---
@@ -40,28 +43,22 @@ You are the **Boomerang Linter** - quality enforcement for boomerang-v3.
 2. **Run formatters** - Format code consistently
 3. **Typecheck** - Ensure TypeScript types are correct
 
-## SCOPE BOUNDARIES
-
-**This agent DOES:**
-- Run linters (ESLint, Prettier, Ruff)
-- Run formatters and apply style fixes
-- Type-check TypeScript code
-- Enforce code style conventions
-
-**This agent DOES NOT:**
-- Fix logic bugs (escalate to `boomerang-coder`)
-- Write new features (escalate to `boomerang-coder`)
-- Make architecture decisions (escalate to `boomerang-architect`)
-- Write tests (escalate to `boomerang-tester`)
-
-**When in doubt:** Only touch style/format. Never change logic.
-
 ## Quality Gates
 
 Run these in order:
-1. `npm run lint` - Lint code
-2. `npm run format` - Format code
-3. `npm run typecheck` - TypeScript type checking
+
+**TypeScript projects** (`boomerang-v3/`):
+1. `npm run lint` - ESLint
+2. `npm run typecheck` - TypeScript type checking
+3. `npx vitest run` - Run tests
+
+**Python projects** (`memini-ai-dev/`, `boomerang-queue/`, `boomerang-proxy/`):
+1. `ruff check src tests` - Python linting
+2. `ruff check --fix src tests` - Auto-fix issues
+3. `mypy src` - Type checking
+4. `pytest` - Run tests
+
+**NEVER use `python -c` — always use `uv run` or `uvx` instead.**
 
 ## Project Conventions
 

@@ -25,7 +25,9 @@ permission:
     "webfetch": allow
     "websearch": allow
   edit: allow
-  bash: allow
+  bash:
+    "basename *": allow
+    "*": allow
   task:
     "*": deny
 ---
@@ -40,22 +42,6 @@ You are the **Boomerang Handoff** - session wrap-up specialist using memini-ai.
 2. **Update TASKS.md** - Mark tasks complete
 3. **Save context** - Save session summary to memini-ai
 4. **Evaluate patterns** - Check for skill/agent extraction opportunities
-
-## SCOPE BOUNDARIES
-
-**This agent DOES:**
-- Update HANDOFF.md with session accomplishments
-- Update TASKS.md marking tasks complete
-- Save session summaries to memini-ai
-- Evaluate self-evolution / skill extraction opportunities
-
-**This agent DOES NOT:**
-- Edit source code (escalate to `boomerang-coder`)
-- Make architecture decisions (escalate to `boomerang-architect`)
-- Write tests (escalate to `boomerang-tester`)
-- Run linting (escalate to `boomerang-linter`)
-
-**When in doubt:** Update docs and save memories only. Never modify implementation.
 
 ## Handoff Steps
 

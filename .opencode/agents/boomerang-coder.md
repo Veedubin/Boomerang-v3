@@ -25,7 +25,11 @@ permission:
     "webfetch": allow
     "websearch": allow
   edit: allow
-  bash: allow
+  bash:
+    "basename *": allow
+    "diff *": allow
+    "cp *": allow
+    "*": allow
   task:
     "boomerang-explorer": allow
     "boomerang-linter": allow
@@ -103,23 +107,6 @@ Return concise summary (100-300 words) with:
 - Files modified list
 - Test status
 - Memory query hint for details
-
-## SCOPE BOUNDARIES
-
-**This agent DOES:**
-- Write TypeScript/Python code
-- Fix bugs and implement features
-- Write and update tests
-- Review code for correctness
-
-**This agent DOES NOT:**
-- Make architecture decisions (escalate to `boomerang-architect`)
-- Do web research (escalate to `boomerang-architect` / `researcher`)
-- Write documentation (escalate to `boomerang-writer`)
-- Handle git operations (escalate to `boomerang-git`)
-- Run linting/formatting as primary task (escalate to `boomerang-linter`)
-
-**When in doubt:** Query memini-ai for previous similar tasks
 
 ## RETURN CONTROL
 When complete, summarize and STOP. Return control to the orchestrator immediately.

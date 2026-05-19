@@ -24,8 +24,12 @@ permission:
     "playwright_*": allow
     "webfetch": allow
     "websearch": allow
-  edit: ask
-  bash: allow
+  edit: allow
+  bash:
+    "basename *": allow
+    "diff *": allow
+    "cp *": allow
+    "*": allow
   task:
     "researcher": allow
     "boomerang-explorer": allow
@@ -64,23 +68,6 @@ Key decisions (architectural choices) should be saved with:
 - `sourceType: "boomerang"`
 - `metadata.project: "boomerang-v3"`
 - `metadata.type: "architecture-decision"`
-
-## SCOPE BOUNDARIES
-
-**This agent DOES:**
-- Create architecture and design plans
-- Research technical topics and patterns
-- Analyze trade-offs and document rationale
-- Review code against project patterns
-
-**This agent DOES NOT:**
-- Write implementation code (delegate to `boomerang-coder`)
-- Fix bugs directly (delegate to `boomerang-coder`)
-- Write tests (delegate to `boomerang-tester`)
-- Handle git operations (delegate to `boomerang-git`)
-- Do file finding (delegate to `boomerang-explorer`)
-
-**When in doubt:** Research it yourself rather than delegating down. Query memini-ai for architectural precedent.
 
 ## Escalation
 

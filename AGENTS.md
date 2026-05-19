@@ -84,20 +84,30 @@ The orchestrator MUST delegate based on these rules. No exceptions.
 
 ### Orchestrator Permissions (v3.0.0)
 
-The orchestrator provides **intelligent routing and context building** — it does not execute agents directly.
+The orchestrator provides **intelligent routing and context building** — it primarily delegates to sub-agents but CAN edit documentation files directly (TASKS.md, AGENTS.md, CONTEXT.md, HANDOFF.md).
 
 **Orchestrator Does:**
 - Analyze request and detect task type
 - Query memini-ai for relevant context
 - Select appropriate agent based on task
 - Build rich Context Package with all necessary information
+- Edit documentation and todo lists directly
 - Return `{agent, systemPrompt, contextPackage, suggestions}` to OpenCode
 
 **Orchestrator Delegates:**
 - Agent execution → OpenCode (native)
+- Code implementation → boomerang-coder
+- Testing → boomerang-tester
+- Linting → boomerang-linter
+- Git operations → boomerang-git
 - Multi-file changes → sub-agents
 - Complex implementation → boomerang-coder
 - Architecture decisions → boomerang-architect
+
+**PARALLEL EXECUTION IS MANDATORY** — The orchestrator MUST launch multiple sub-agents simultaneously when tasks have no dependencies. Examples:
+- Linter + Tester for independent validation
+- Coder + Writer for code + documentation
+- Multiple Coders for unrelated file changes
 
 **Decision Threshold:**
 ```
@@ -365,6 +375,7 @@ IDLE → MEMORY_QUERY → SEQUENTIAL_THINK → PLAN → DELEGATE → GIT_CHECK �
 
 ## Review Notes
 
+- **2026-05-19**: **boomerang-v3 v0.3.2 UPDATED** — Agent bash permissions expanded: `basename`, `diff`, `cp`, `which` added. Orchestrator clarified: CAN edit docs, delegates code. Parallel execution guidance added. All 30 agent files synced between `.opencode/agents/` and `boomerang-v3/.opencode/agents/`.
 - **2026-05-19**: **boomerang-v3 v0.3.1 RELEASED** — Added common bash commands (ls, head, tail, cat, grep, find, cd, echo) to 7 agent permission files. Tag `v0.3.1` pushed to GitHub.
 - **2026-05-19**: **boomerang-v3 v0.3.0 RELEASED** — Agent permissions overhaul: `mode: subagent` + comprehensive tool permissions for all 30 agent files. SQL injection fix in boomerang-queue. Phase 3 Ollama Cloud Proxy design doc created. Tag `v0.3.0` pushed to GitHub.
 - **2026-05-19**: **memini-ai-dev v0.2.8 RELEASED** — Ruff formatting pass (isort, whitespace, imports) across 30 files. No functional changes. Tag `v0.2.8` pushed to GitHub.
