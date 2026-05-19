@@ -5,34 +5,37 @@
 > **Note**: Models are configurable. Use `install-agents.js --primary=<model> --secondary=<model>` to customize.
 
 | Agent | Skill | Default Model | Role |
-|-------|-------|-------|------|
-| **boomerang** | boomerang-orchestrator | Kimi K2.6 | 🎯 **Orchestrator** — Plans, coordinates, provides intelligent routing |
+|-------|-------|-------|-------|
+| **boomerang** | boomerang-orchestrator | Gemini | 🎯 **Orchestrator** — Plans, coordinates, provides intelligent routing |
 | **boomerang-coder** | boomerang-coder | MiniMax M2.7 | 💻 **Fast code generation** — Write and modify code efficiently |
-| **boomerang-architect** | boomerang-architect | Kimi K2.6 | 🏗️ **Design decisions** — Trade-off analysis and architecture |
+| **boomerang-architect** | boomerang-architect | Gemini | 🏗️ **Design decisions** — Trade-off analysis and architecture |
 | **boomerang-explorer** | boomerang-explorer | MiniMax M2.7 | 🔍 **Codebase exploration** — Find files by name/glob |
 | **boomerang-tester** | boomerang-tester | MiniMax M2.7 | 🧪 **Testing specialist** — Unit/integration tests, verification |
 | **boomerang-linter** | boomerang-linter | MiniMax M2.7 | ✅ **Quality enforcement** — Lint, format, style consistency |
 | **boomerang-git** | boomerang-git | MiniMax M2.7 | 📦 **Version control** — Commits, branches, history discipline |
-| **boomerang-writer** | boomerang-writer | Kimi K2.6 | 📝 **Documentation** — Markdown writing and documentation |
+| **boomerang-writer** | boomerang-writer | Gemini | 📝 **Documentation** — Markdown writing and documentation |
 | **boomerang-scraper** | boomerang-scraper | MiniMax M2.7 | 🌐 **Web scraping** — Research and information gathering |
 | **boomerang-release** | boomerang-release | MiniMax M2.7 | 🚀 **Release automation** — Version bump, changelog, publish |
+| **boomerang-agent-builder** | boomerang-agent-builder | MiniMax M2.7 | 🏗️ **Agent Builder** — Builds new skills and sub-agents from detected patterns |
 | **researcher** | researcher | MiniMax M2.7 | 🌐 **Web research** — Search, fetch, and synthesize online information |
 | **mcp-specialist** | mcp-specialist | MiniMax M2.7 | 🔌 **MCP Protocol** — Tool design, server debug |
 
 | Skill | Purpose | Model |
 |-------|---------|-------|
-| **boomerang-init** | Initialize and personalize agents for a project | Kimi K2.6 |
-| **boomerang-handoff** | Wrap-up session. Updates docs, saves context | Kimi K2.6 |
+| **boomerang-init** | Initialize and personalize agents for a project | Gemini |
+| **boomerang-handoff** | Wrap-up session. Updates docs, saves context | Gemini |
+| **boomerang-agent-builder** | Build new skills and sub-agents from patterns | MiniMax M2.7 |
 
 ## Agent Selection Guide
 
 | Task Type | → Primary Agent | Model |
 |-----------|------------------|-------|
-| Complex planning / orchestration | `boomerang` | Kimi K2.6 |
-| Architecture / design decisions | `boomerang-architect` | Kimi K2.6 |
-| Documentation writing | `boomerang-writer` | Kimi K2.6 |
-| Session initialization | `boomerang-init` | Kimi K2.6 |
-| Session wrap-up / handoff | `boomerang-handoff` | Kimi K2.6 |
+| Complex planning / orchestration | `boomerang` | Gemini |
+| Architecture / design decisions | `boomerang-architect` | Gemini |
+| Documentation writing | `boomerang-writer` | Gemini |
+| Session initialization | `boomerang-init` | Gemini |
+| Session wrap-up / handoff | `boomerang-handoff` | Gemini |
+| Skill/agent creation | `boomerang-agent-builder` | MiniMax M2.7 |
 | Fast code generation / bug fixes | `boomerang-coder` | MiniMax M2.7 |
 | Code exploration / finding files | `boomerang-explorer` | MiniMax M2.7 |
 | Writing / running tests | `boomerang-tester` | MiniMax M2.7 |

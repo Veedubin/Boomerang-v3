@@ -54,7 +54,7 @@ Use this skill when:
 
 ## Model
 
-Use **Kimi K2.6** for orchestration planning.
+Use **Gemini** for orchestration planning.
 
 ## Critical Workflow Rule: Architect Owns Research
 

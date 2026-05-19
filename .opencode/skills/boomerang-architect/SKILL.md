@@ -29,7 +29,7 @@ Use this skill when:
 
 ## Model
 
-Use **Kimi K2.6** for strategic architecture decisions.
+Use **Gemini** for strategic architecture decisions.
 
 ## Critical: You Own Research + Planning
 
