@@ -1,10 +1,21 @@
 {
   "name": "@veedubin/boomerang-v3",
-  "version": "0.3.2",
+  "version": "0.3.4",
   "description": "Multi-agent orchestration plugin for OpenCode with memini-ai memory",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "boomerang-setup": "./scripts/install-boomerang.js"
+  },
+  "files": [
+    "dist/",
+    "scripts/",
+    ".opencode/",
+    "AGENTS.md",
+    "package.json",
+    "README.md"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/Veedubin/Boomerang-v3"

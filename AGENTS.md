@@ -1,5 +1,15 @@
 # Boomerang Agent Roster
 
+## ⚡ CRITICAL: memini-ai Memory Protocol (MUST FOLLOW)
+
+All agents **MUST** interact with memini-ai at every step:
+1. **Query FIRST** — Call `memini-ai-dev_query_memories` before starting work
+2. **Save DURING** — Call `memini-ai-dev_add_memory` after every meaningful decision
+3. **Preserve CONTEXT** — Save important context; query it back when continuing work
+
+Failure to use memini-ai causes context loss, duplicate work, and wasted tokens.
+
+
 ## Core Agents
 
 > **Note**: Models are configurable. Use `install-agents.js --primary=<model> --secondary=<model>` to customize.
