@@ -27,6 +27,14 @@ permission:
   edit: deny
   bash:
     "curl *": allow
+    "ls *": allow
+    "head *": allow
+    "tail *": allow
+    "cat *": allow
+    "grep *": allow
+    "find *": allow
+    "cd *": allow
+    "echo *": allow
   webfetch: allow
   websearch: allow
   task:

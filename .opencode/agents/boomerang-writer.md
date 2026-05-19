@@ -27,6 +27,13 @@ permission:
   edit: allow
   bash:
     "ls *": allow
+    "head *": allow
+    "tail *": allow
+    "cat *": allow
+    "grep *": allow
+    "find *": allow
+    "cd *": allow
+    "echo *": allow
   task:
     "*": deny
 ---

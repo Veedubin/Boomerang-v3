@@ -31,12 +31,17 @@ permission:
     "npm *": allow
     "bun *": allow
     "ls *": allow
+    "head *": allow
+    "tail *": allow
     "mkdir *": allow
     "rm *": ask
     "cat *": allow
     "grep *": allow
     "find *": allow
     "cd *": allow
+    "echo *": allow
+    "chmod *": ask
+    "chown *": ask
   task:
     "*": deny
     "boomerang-coder": allow
