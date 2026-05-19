@@ -365,7 +365,9 @@ IDLE → MEMORY_QUERY → SEQUENTIAL_THINK → PLAN → DELEGATE → GIT_CHECK �
 
 ## Review Notes
 
-- **2026-05-19**: **CRITICAL FIX: Agent Permissions Overhaul** — Changed all 14 specialist agents from `mode: primary` to `mode: subagent` (orchestrator: `mode: all`). Added comprehensive permissions to all 30 agent files (`.opencode/agents/` + `boomerang-v3/.opencode/agents/`): read/glob/grep/list/todowrite/external_directory/lsp/skill/question/doom_loop all `allow`, tool permissions for memini-ai-dev_*, searxng_*, sequential-thinking_*, markitdown_*, github-mcp_*, playwright_*, webfetch, websearch. Per-agent edit/bash/task permissions. Task tool can now properly invoke boomerang-coder, boomerang-architect, boomerang-tester, etc.
+- **2026-05-19**: **boomerang-v3 v0.3.1 RELEASED** — Added common bash commands (ls, head, tail, cat, grep, find, cd, echo) to 7 agent permission files. Tag `v0.3.1` pushed to GitHub.
+- **2026-05-19**: **boomerang-v3 v0.3.0 RELEASED** — Agent permissions overhaul: `mode: subagent` + comprehensive tool permissions for all 30 agent files. SQL injection fix in boomerang-queue. Phase 3 Ollama Cloud Proxy design doc created. Tag `v0.3.0` pushed to GitHub.
+- **2026-05-19**: **memini-ai-dev v0.2.8 RELEASED** — Ruff formatting pass (isort, whitespace, imports) across 30 files. No functional changes. Tag `v0.2.8` pushed to GitHub.
 - **2026-05-19**: Updated to Ollama Cloud models — All agents reassigned to Ollama Cloud models with 3 concurrent limit. Created `.opencode/opencode.json` with `ollama-cloud` provider. Provider ID: `ollama`, baseURL: `https://ollama.com/v1`.
 - **2026-05-18**: v3.0.0 RELEASED — memini-ai integration: Trust engine, knowledge graph, tiered loading. PostgreSQL with pgvector backend. 645 tests passing in memini-ai.
 - **2026-05-06**: v4.1.0 (boomerang-v2) — Protocol enforcement: MANDATORY. Parallel agent launching.
