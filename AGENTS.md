@@ -23,7 +23,7 @@ Failure to use memini-ai causes context loss, duplicate work, and wasted tokens.
 | **boomerang-tester** | boomerang-tester | deepseek-v4-flash:cloud | Massive 1M context window for ingesting deep error logs and codebase context quickly and efficiently. |
 | **boomerang-linter** | boomerang-linter | qwen3-coder-next:cloud | Highly optimized for agentic coding workflows; blazing fast for syntax formatting and style checks. |
 | **boomerang-git** | boomerang-git | minimax-m2.7:cloud | Fast and highly reliable for standard professional productivity and executing structured terminal commands. |
-| **boomerang-writer** | boomerang-writer | gemma4:cloud | Frontier-level instruction following; excels at translating technical logic into clean, readable Markdown. |
+| **boomerang-writer** | boomerang-writer | gemma4:31b-cloud | Frontier-level instruction following; excels at translating technical logic into clean, readable Markdown. |
 | **boomerang-scraper** | boomerang-scraper | qwen3.5:cloud | Strong, lightweight generalist with excellent tool-use capabilities for reliable data extraction. |
 | **boomerang-release** | boomerang-release | devstral-small-2:cloud | Fast 24B model perfect for targeted automation tasks like bumping versions and summarizing changelogs. |
 | **boomerang-agent-builder** | boomerang-agent-builder | glm-5.1:cloud | Excels at long-horizon tasks and ambiguous problems; ideal for writing and optimizing new agent logic. |
@@ -77,7 +77,7 @@ The orchestrator MUST delegate based on these rules. No exceptions.
 |-----------|------------------|-------|-------------------|
 | Complex planning / orchestration | `boomerang` | kimi-k2.6:cloud | `general` |
 | Architecture / design decisions | `boomerang-architect` | deepseek-v4-pro:cloud | `general`, `boomerang-coder` |
-| Documentation writing | `boomerang-writer` | gemma4:cloud | `general` |
+| Documentation writing | `boomerang-writer` | gemma4:31b-cloud | `general` |
 | Session initialization | `boomerang-init` | kimi-k2.6:cloud | Everything else |
 | Session wrap-up / handoff | `boomerang-handoff` | kimi-k2.6:cloud | Everything else |
 | Skill/agent creation | `boomerang-agent-builder` | glm-5.1:cloud | `general` |

@@ -537,7 +537,7 @@ To point OpenCode at the proxy, update `~/.config/opencode/opencode.json` (or `.
         "deepseek-v4-flash:cloud",
         "qwen3-coder-next:cloud",
         "minimax-m2.7:cloud",
-        "gemma4:cloud",
+        "gemma4:31b-cloud",
         "qwen3.5:cloud"
       ]
     }

@@ -1,7 +1,7 @@
 ---
-description: Boomerang Writer v3 - Documentation specialist using gemma4:cloud (Ollama Cloud) with memini-ai for context.
+description: Boomerang Writer v3 - Documentation specialist using gemma4:31b-cloud (Ollama Cloud) with memini-ai for context.
 mode: subagent
-model: ollama-cloud/gemma4:cloud
+model: ollama-cloud/gemma4:31b-cloud
 steps: 40
 permission:
   read:
