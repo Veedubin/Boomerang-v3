@@ -1,5 +1,5 @@
 {
-  "name": "@veedubin/Boomerang-v3",
+  "name": "@veedubin/boomerang-v3",
   "version": "0.1.0",
   "description": "Multi-agent orchestration plugin for OpenCode with memini-ai memory",
   "type": "module",
