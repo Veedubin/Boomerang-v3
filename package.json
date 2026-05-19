@@ -1,6 +1,6 @@
 {
   "name": "@veedubin/boomerang-v3",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Multi-agent orchestration plugin for OpenCode with memini-ai memory",
   "type": "module",
   "main": "dist/index.js",
@@ -31,7 +31,9 @@
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.0.0",
+    "eslint": "^10.4.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"
   },
