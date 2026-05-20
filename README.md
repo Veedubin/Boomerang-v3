@@ -48,7 +48,7 @@ memini-ai includes a live D3.js visualization for the knowledge graph:
 ```bash
 cd memini-ai-dev
 export MEMINI_DB_URL="postgresql://postgres:password@localhost:5432/postgres"
-python -m uvicorn memini_ai.api.visualization:create_app --factory True --host 0.0.0.0 --port 8000
+uvx --from memini-ai-dev memini-ai --server --port 8000
 ```
 
 Then open `http://localhost:8000` for the interactive graph visualization.
@@ -124,7 +124,7 @@ docker run -d --name postgres-test \
 ```bash
 cd memini-ai-dev
 export MEMINI_DB_URL="postgresql://postgres:password@localhost:5432/postgres"
-python -m memini_ai.server
+uvx --from memini-ai-dev memini-ai --stdio
 ```
 
 ### Run Boomerang
