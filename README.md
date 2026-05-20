@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenCode Plugin](https://img.shields.io/badge/OpenCode-Plugin-ff6b35?style=flat-square)](https://opencode.ai)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square)](https://www.typescriptlang.org/)
-[![v3.0.0](https://img.shields.io/badge/v3.0.0-memini--ai-2ecc71?style=flat-square)](https://github.com/Veedubin/opencode-boomerang/releases/tag/plugin-v3.0.0)
+[![v0.4.1](https://img.shields.io/badge/v0.4.1-memini--ai-2ecc71?style=flat-square)](https://github.com/Veedubin/Boomerang-v3/releases/tag/v0.4.1)
 
 *Intelligent multi-agent coordination for OpenCode with memini-ai memory.*
 
@@ -283,6 +283,7 @@ boomerang-v3/
 
 ## Release History
 
+- **v0.4.1** — Documentation refresh, stale version references corrected across monorepo
 - **v3.0.0** — memini-ai integration: Trust engine, knowledge graph, tiered loading, PostgreSQL/pgvector
 - **v4.0.0** (boomerang-v2) — Orchestrator as pure decision layer, OpenCode handles execution
 - **v3.0.0** (boomerang-v2) — LanceDB → Qdrant migration
