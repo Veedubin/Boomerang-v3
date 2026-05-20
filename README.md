@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenCode Plugin](https://img.shields.io/badge/OpenCode-Plugin-ff6b35?style=flat-square)](https://opencode.ai)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square)](https://www.typescriptlang.org/)
-[![v0.4.1](https://img.shields.io/badge/v0.4.1-memini--ai-2ecc71?style=flat-square)](https://github.com/Veedubin/Boomerang-v3/releases/tag/v0.4.1)
+[![v0.4.3](https://img.shields.io/badge/v0.4.3-memini--ai-2ecc71?style=flat-square)](https://github.com/Veedubin/Boomerang-v3/releases/tag/v0.4.3)
 
 *Intelligent multi-agent coordination for OpenCode with memini-ai memory.*
 
@@ -31,7 +31,9 @@
 - **Tiered loading (L0/L1/L2)** — Efficient context abstraction
 - **Contradiction detection** — Find and resolve conflicting memories
 - **Knowledge graph integration** — Entity extraction and inference
-- **Python-based memini-ai** — Modern memory server with FastMCP
+- **Thought Chains** — Structured reasoning traces for complex problem solving
+- **Multi-Peer & Dialectic Memory** — Collaborative memory sharing and dialectic resolution
+- **Python-based memini-ai** — Modern memory server with FastMCP ([PyPI](https://pypi.org/project/memini-ai-dev/))
 
 ---
 
@@ -63,7 +65,7 @@ npm install @veedubin/boomerang-v3
 
 ### Configuration
 
-Add to your `.opencode/opencode.json`:
+Add to your `.opencode/opencode.json`. If using **Ollama Cloud**, ensure your provider is configured with `baseURL: "https://ollama.com/v1"`.
 
 ```json
 {
@@ -85,7 +87,7 @@ Add to your `.opencode/opencode.json`:
         "MEMINI_DECAY_ENABLED": "true",
         "MEMINI_MULTI_PEER_ENABLED": "true",
         "MEMINI_DIALECTIC_ENABLED": "true",
-        "MEMINI_THOUGHT_CHAINS_ENABLED": "true"
+        "THOUGHT_CHAINS": "true"
       },
       "timeout": 60000,
       "enabled": true
@@ -98,7 +100,7 @@ Add to your `.opencode/opencode.json`:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `MEMINI_DB_URL` | PostgreSQL connection URL | `postgresql://postgres:password@localhost:5432/postgres` |
+| `MEMINI_DB_URL` | PostgreSQL connection URL | `postgresql://postgres:password@localhost:5434/postgres` |
 | `MEMINI_PROJECT_ID` | Project namespace | auto-generated |
 | `MEMINI_EMBEDDING_DIM` | 1024 or 384 | 1024 |
 | `MEMINI_DEVICE` | auto, gpu, cpu | auto |
@@ -115,7 +117,7 @@ Add to your `.opencode/opencode.json`:
 ```bash
 docker run -d --name postgres-test \
   -e POSTGRES_PASSWORD=password \
-  -p 5432:5432 \
+  -p 5434:5432 \
   timescale/timescaledb:latest-pg15
 ```
 
@@ -123,7 +125,7 @@ docker run -d --name postgres-test \
 
 ```bash
 cd memini-ai-dev
-export MEMINI_DB_URL="postgresql://postgres:password@localhost:5432/postgres"
+export MEMINI_DB_URL="postgresql://postgres:password@localhost:5434/postgres"
 uvx --from memini-ai-dev memini-ai --stdio
 ```
 
@@ -291,6 +293,8 @@ boomerang-v3/
 
 ## Release History
 
+- **v0.4.3** — Fixed critical env var mismatch for thought chains: `MEMINI_THOUGHT_CHAINS_ENABLED` → `THOUGHT_CHAINS`
+- **v0.4.2** — Removed deprecated `sequential-thinking` references, cleaned up orchestrator SKILL.md
 - **v0.4.1** — Documentation refresh, stale version references corrected across monorepo
 - **v3.0.0** — memini-ai integration: Trust engine, knowledge graph, tiered loading, PostgreSQL/pgvector
 - **v4.0.0** (boomerang-v2) — Orchestrator as pure decision layer, OpenCode handles execution
