@@ -19,7 +19,7 @@ Failure to use memini-ai causes context loss, duplicate work, and wasted tokens.
 | **boomerang** | boomerang-orchestrator | kimi-k2.6:cloud | Specifically built for swarm-based task orchestration and proactive autonomous delegation. |
 | **boomerang-coder** | boomerang-coder | glm-5.1:cloud | Flagship for agentic engineering; achieves SOTA on SWE-Bench Pro for complex, multi-file generation. |
 | **boomerang-architect** | boomerang-architect | deepseek-v4-pro:cloud | Offers frontier reasoning with dedicated "thinking modes" for analyzing complex architectural trade-offs. |
-| **boomerang-explorer** | boomerang-explorer | devstral-2:cloud | Explicitly designed to navigate codebases, trace dependencies, and map repository structures. |
+| **boomerang-explorer** | boomerang-explorer | devstral-2:123b-cloud | Explicitly designed to navigate codebases, trace dependencies, and map repository structures. |
 | **boomerang-tester** | boomerang-tester | deepseek-v4-flash:cloud | Massive 1M context window for ingesting deep error logs and codebase context quickly and efficiently. |
 | **boomerang-linter** | boomerang-linter | qwen3-coder-next:cloud | Highly optimized for agentic coding workflows; blazing fast for syntax formatting and style checks. |
 | **boomerang-git** | boomerang-git | minimax-m2.7:cloud | Fast and highly reliable for standard professional productivity and executing structured terminal commands. |
@@ -82,7 +82,7 @@ The orchestrator MUST delegate based on these rules. No exceptions.
 | Session wrap-up / handoff | `boomerang-handoff` | kimi-k2.6:cloud | Everything else |
 | Skill/agent creation | `boomerang-agent-builder` | glm-5.1:cloud | `general` |
 | Fast code generation / bug fixes | `boomerang-coder` | glm-5.1:cloud | `general`, `boomerang-explorer` |
-| Code exploration / finding files | `boomerang-explorer` | devstral-2:cloud | Everything else |
+| Code exploration / finding files | `boomerang-explorer` | devstral-2:123b-cloud | Everything else |
 | Writing / running tests | `boomerang-tester` | deepseek-v4-flash:cloud | `general`, `boomerang-coder` |
 | Linting / formatting | `boomerang-linter` | qwen3-coder-next:cloud | Everything else |
 | Git operations | `boomerang-git` | minimax-m2.7:cloud | Everything else |
@@ -139,7 +139,7 @@ All agents **MUST** follow the **8-Step Boomerang Protocol** — enforcement is 
 ### 8-Step Protocol (MANDATORY)
 
 1. **Query Memory** — `memini-ai-dev_query_memories` FIRST
-2. **Think** — `sequential-thinking_sequentialthinking` for complex tasks
+2. **Think** — `memini-ai-dev_add_thought` for complex tasks
 3. **Plan** — Create/refine implementation plan (MANDATORY unless user explicitly waives)
 4. **Delegate** — OpenCode executes selected agent with Context Package
 5. **Git Check** — Verify working tree state before code changes
@@ -209,7 +209,7 @@ Boomerang v3 uses **memini-ai** for memory — a Python-based semantic memory se
 
 All agents SHOULD:
 1. **Query memory FIRST** — `memini-ai-dev_query_memories` before work
-2. **Use sequential-thinking** — For complex tasks
+2. **Use thought chains** — For complex tasks
 3. **Save results** — `memini-ai-dev_add_memory` when complete
 
 ### Trust-Weighted Memory
@@ -330,7 +330,7 @@ IDLE → MEMORY_QUERY → SEQUENTIAL_THINK → PLAN → DELEGATE → GIT_CHECK �
 ### 8-Step Mandatory Protocol
 
 1. **MEMORY_QUERY** — MUST call `memini-ai-dev_query_memories` first
-2. **SEQUENTIAL_THINK** — MUST call `sequential-thinking_sequentialthinking` for complex tasks
+2. **SEQUENTIAL_THINK** — MUST call `memini-ai-dev_add_thought` for complex tasks
 3. **PLAN** — MUST create plan or delegate to architect for build tasks
 4. **DELEGATE** — OpenCode handles agent execution
 5. **GIT_CHECK** — MUST verify working tree state before code changes

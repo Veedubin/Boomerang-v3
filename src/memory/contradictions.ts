@@ -5,7 +5,7 @@
  */
 
 import { getClient, MeminiClient } from '../memini-client/index.js';
-import type { MemoryEntry, Contradiction, Resolution, Argument } from './schema.js';
+import type { MemoryEntry, Contradiction, Resolution } from './schema.js';
 
 /**
  * Find memory pairs that contradict each other
@@ -135,7 +135,7 @@ export async function challengeMemory(
 /**
  * Adapt a raw memory from memini-ai to our MemoryEntry type
  */
-function adaptMemoryEntry(raw: Record<string, unknown>): MemoryEntry {
+function _adaptMemoryEntry(raw: Record<string, unknown>): MemoryEntry {
   let timestamp: number;
   if (typeof raw.timestamp === 'number') {
     timestamp = raw.timestamp;

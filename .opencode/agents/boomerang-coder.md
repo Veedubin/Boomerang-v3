@@ -18,7 +18,6 @@ permission:
   tool:
     "memini-ai-dev_*": allow
     "searxng_*": allow
-    "sequential-thinking_*": allow
     "markitdown_*": allow
     "github-mcp_*": allow
     "playwright_*": allow
@@ -49,7 +48,7 @@ Implement features, fix bugs, and write tests efficiently using the Context Pack
 ## MANDATORY MEMORY PROTOCOL
 
 1. **Query memini-ai FIRST** - Call `memini-ai-dev_query_memories` before doing ANY work
-2. **Use sequential-thinking** - Call `sequential-thinking_sequentialthinking` for complex tasks
+2. **Use thought chains** - Call `memini-ai-dev_add_thought` for complex tasks
 3. **Save when complete** - Call `memini-ai-dev_add_memory` with a summary of your work
 
 ## Context Requirements

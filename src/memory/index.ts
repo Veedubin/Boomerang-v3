@@ -6,7 +6,6 @@
 
 import {
   MeminiMCPClient,
-  getClient,
   initializeClient,
   type MeminiClient,
 } from '../memini-client/index.js';
@@ -19,7 +18,7 @@ import type {
 } from './schema.js';
 import { DEFAULT_SEARCH_OPTIONS } from './schema.js';
 
-const PROJECT_ID = process.env.BOOMERANG_PROJECT_ID || 'boomerang-default';
+const _PROJECT_ID = process.env.BOOMERANG_PROJECT_ID || 'boomerang-default';
 
 class MemorySystem {
   private static instance: MemorySystem | null = null;

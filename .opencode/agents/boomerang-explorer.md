@@ -1,7 +1,7 @@
 ---
-description: Boomerang Explorer v3 - Fast file finding using devstral-2:cloud (Ollama Cloud) with memini-ai semantic search.
+description: Boomerang Explorer v3 - Fast file finding using devstral-2:123b-cloud (Ollama Cloud) with memini-ai semantic search.
 mode: subagent
-model: ollama-cloud/devstral-2:cloud
+model: ollama-cloud/devstral-2:123b-cloud
 steps: 30
 permission:
   read:
@@ -18,7 +18,6 @@ permission:
   tool:
     "memini-ai-dev_*": allow
     "searxng_*": allow
-    "sequential-thinking_*": allow
     "markitdown_*": allow
     "github-mcp_*": allow
     "playwright_*": allow

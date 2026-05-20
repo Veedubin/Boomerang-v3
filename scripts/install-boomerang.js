@@ -49,7 +49,7 @@ const PROVIDERS = {
       'kimi-k2.6:cloud': { name: 'Kimi K2.6 (Cloud)' },
       'glm-5.1:cloud': { name: 'GLM 5.1 (Cloud)' },
       'deepseek-v4-pro:cloud': { name: 'DeepSeek V4 Pro (Cloud)' },
-      'devstral-2:cloud': { name: 'Devstral 2 (Cloud)' },
+      'devstral-2:123b-cloud': { name: 'Devstral 2 (Cloud)' },
       'deepseek-v4-flash:cloud': { name: 'DeepSeek V4 Flash (Cloud)' },
       'qwen3-coder-next:cloud': { name: 'Qwen3 Coder Next (Cloud)' },
       'minimax-m2.7:cloud': { name: 'MiniMax M2.7 (Cloud)' },

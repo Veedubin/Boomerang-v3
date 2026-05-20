@@ -27,7 +27,7 @@
 │  └─────────────────┘      │                                         │    │
 │  ┌─────────────────┐      │  ┌─────────────────────────────────┐ │    │
 │  │   Sub-agent 2   │─────▶│  │  OpenAI-Compatible API Surface  │ │    │
-│  │ devstral-2:cloud │      │  │  • POST /v1/chat/completions    │ │    │
+│  │ devstral-2:123b-cloud │      │  │  • POST /v1/chat/completions    │ │    │
 │  │   (1 slot)      │      │  │  • GET  /v1/models              │ │    │
 │  └─────────────────┘      │  │  • POST /v1/embeddings          │ │    │
 │        Total: 3           │  └─────────────────────────────────┘ │    │
@@ -533,7 +533,7 @@ To point OpenCode at the proxy, update `~/.config/opencode/opencode.json` (or `.
         "kimi-k2.6:cloud",
         "glm-5.1:cloud",
         "deepseek-v4-pro:cloud",
-        "devstral-2:cloud",
+        "devstral-2:123b-cloud",
         "deepseek-v4-flash:cloud",
         "qwen3-coder-next:cloud",
         "minimax-m2.7:cloud",

@@ -18,7 +18,6 @@ permission:
   tool:
     "memini-ai-dev_*": allow
     "searxng_*": allow
-    "sequential-thinking_*": allow
     "markitdown_*": allow
     "github-mcp_*": allow
     "playwright_*": allow
@@ -49,7 +48,7 @@ You are the **Boomerang Architect** - the authority on design decisions, archite
 ## MANDATORY MEMORY PROTOCOL
 
 1. **Query memini-ai FIRST** - `memini-ai-dev_query_memories` for previous decisions
-2. **Use sequential-thinking** - `sequential-thinking_sequentialthinking` for complex analysis
+2. **Use thought chains** - `memini-ai-dev_add_thought` for complex analysis
 3. **Query knowledge graph** - `memini-ai-dev_query_kg` for entity relationships
 4. **Save when complete** - `memini-ai-dev_add_memory` with key decisions
 

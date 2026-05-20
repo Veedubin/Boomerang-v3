@@ -753,7 +753,7 @@ export function getClient(): MeminiClient {
   return clientInstance;
 }
 
-export async function initializeClient(pythonPath?: string, serverModule?: string): Promise<MeminiClient> {
+export async function initializeClient(_pythonPath?: string, _serverModule?: string): Promise<MeminiClient> {
   const client = getClient();
   await client.initialize();
   return client;

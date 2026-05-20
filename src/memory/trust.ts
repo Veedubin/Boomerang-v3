@@ -200,7 +200,7 @@ export async function triggerConsolidation(
 /**
  * Adapt a raw memory from memini-ai to our MemoryEntry type
  */
-function adaptMemoryEntry(meminiEntry: { id: string; text: string; sourceType: string; sourcePath?: string; timestamp: number; contentHash?: string; metadataJson?: string; sessionId?: string; projectId?: string; score?: number; trustScore?: number; vector?: Float32Array }): MemoryEntry {
+function _adaptMemoryEntry(meminiEntry: { id: string; text: string; sourceType: string; sourcePath?: string; timestamp: number; contentHash?: string; metadataJson?: string; sessionId?: string; projectId?: string; score?: number; trustScore?: number; vector?: Float32Array }): MemoryEntry {
   return {
     id: meminiEntry.id,
     text: meminiEntry.text,

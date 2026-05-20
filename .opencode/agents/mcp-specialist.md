@@ -18,7 +18,6 @@ permission:
   tool:
     "memini-ai-dev_*": allow
     "searxng_*": allow
-    "sequential-thinking_*": allow
     "markitdown_*": allow
     "github-mcp_*": allow
     "playwright_*": allow
