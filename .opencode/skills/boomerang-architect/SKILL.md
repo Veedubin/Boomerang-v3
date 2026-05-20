@@ -226,10 +226,10 @@ memini-ai-dev_query_kg({
    - Any lessons learned
    - Adjust trust based on outcome
 
-### Sequential Thinking
+### Thought Chains
 
 For complex tasks (multi-file changes, architectural decisions, debugging):
-- Use sequential-thinking to plan your approach
+- Use `memini-ai-dev_add_thought` to plan your approach
 - Adjust total_thoughts as needed
 - Do not rush through analysis
 

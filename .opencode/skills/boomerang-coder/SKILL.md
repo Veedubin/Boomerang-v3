@@ -99,10 +99,10 @@ Every memory starts at trust=0.5 and is adjusted by feedback:
    - Any lessons learned
    - Adjust trust based on outcome (use `agent_used` if code is correct)
 
-### Sequential Thinking
+### Thought Chains
 
 For complex tasks (multi-file changes, architectural decisions, debugging):
-- Use sequential-thinking to plan your approach
+- Use `memini-ai-dev_add_thought` to plan your approach
 - Adjust total_thoughts as needed
 - Do not rush through analysis
 

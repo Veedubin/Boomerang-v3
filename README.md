@@ -69,18 +69,26 @@ Add to your `.opencode/opencode.json`:
 {
   "plugin": ["@veedubin/boomerang-v3"],
   "mcp": {
-    "sequential-thinking": {
+    "memini-ai-dev": {
       "type": "local",
-      "command": ["npx", "-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "command": ["uvx", "--from", "memini-ai-dev", "memini-ai", "--stdio"],
+      "environment": {
+        "MEMINI_DB_URL": "postgresql://postgres:password@localhost:5434/postgres",
+        "MEMINI_EMBEDDING_DIM": "384",
+        "MEMINI_TRUST_ENGINE": "true",
+        "MEMINI_MEMORY_GRAPH": "true",
+        "MEMINI_KG_ENABLED": "true",
+        "MEMINI_TIERED_LOADING": "true",
+        "MEMINI_AUTO_EXTRACT": "true",
+        "MEMINI_PRECOMPRESS": "true",
+        "MEMINI_USER_MODELING": "true",
+        "MEMINI_DECAY_ENABLED": "true",
+        "MEMINI_MULTI_PEER_ENABLED": "true",
+        "MEMINI_DIALECTIC_ENABLED": "true",
+        "MEMINI_THOUGHT_CHAINS_ENABLED": "true"
+      },
+      "timeout": 60000,
       "enabled": true
-    },
-    "memini-ai": {
-      "type": "stdio",
-      "command": ["python", "-m", "memini_ai.server"],
-      "env": {
-        "MEMINI_DB_URL": "postgresql://postgres:password@localhost:5432/postgres",
-        "MEMINI_PROJECT_ID": "my-project"
-      }
     }
   }
 }
