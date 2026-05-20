@@ -52,7 +52,19 @@ jobs:
           fi
           echo "Build output verified"
 
+      # Attempt auth check to fail fast with clear error message
+      - name: Verify NPM auth
+        run: |
+          TOKEN=$(node -e "console.log(process.env.NODE_AUTH_TOKEN ? 'set' : 'missing')")
+          if [ "$TOKEN" = "missing" ]; then
+            echo "ERROR: NODE_AUTH_TOKEN is not set."
+            echo "Please set either NPM_PUBLISH_TOKEN or NPM_TOKEN in GitHub Actions secrets."
+            exit 1
+          fi
+          npm whoami 2>/dev/null || echo "WARNING: npm whoami failed — token may be invalid"
+
       - name: Publish to NPM with provenance
         run: npm publish --access public --provenance
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+          # Fallback: try NPM_PUBLISH_TOKEN first, then NPM_TOKEN
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN != '' && secrets.NPM_PUBLISH_TOKEN || secrets.NPM_TOKEN }}
