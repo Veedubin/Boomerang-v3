@@ -385,6 +385,9 @@ IDLE → MEMORY_QUERY → SEQUENTIAL_THINK → PLAN → DELEGATE → GIT_CHECK �
 
 ## Review Notes
 
+- **2026-05-21**: **boomerang-v3 v0.5.0 RELEASED** — Agent permission overhaul v0.5.0: replaced wildcard tool patterns with explicit allow-lists per agent role. Security improvements: boomerang-release local-only, boomerang-git gets remote GitHub MCP. ~57-73% token reduction per request.
+- **2026-05-20**: **boomerang-v3 v0.4.3 RELEASED** — Fixed critical env var mismatch for thought chains: `MEMINI_THOUGHT_CHAINS_ENABLED` → `THOUGHT_CHAINS`. The memini-ai server uses `alias="THOUGHT_CHAINS"` (not `MEMINI_THOUGHT_CHAINS_ENABLED`). Requires OpenCode restart to load the corrected config.
+- **2026-05-20**: **boomerang-v3 v0.4.2 RELEASED** — Removed deprecated `sequential-thinking` references from README, skills, and orchestrator SKILL.md. Added `MEMINI_THOUGHT_CHAINS_ENABLED: "true"` to root `opencode.json` (later corrected to `THOUGHT_CHAINS`).
 - **2026-05-19**: **boomerang-v3 v0.4.1 RELEASED** — Documentation refreshed, stale version references updated across monorepo. package.json bumped from v0.4.0 → v0.4.1.
 - **2026-05-19**: **boomerang-v3 v0.4.0 RELEASED** — Lint fixes (13 ESLint errors), context buffer added, telemetry client added. 127/127 tests passing, 0 lint errors. Git tag `v0.4.0` pushed. npm publish failed: invalid/missing `NPM_PUBLISH_TOKEN` in GitHub Actions secrets.
 - **2026-05-19**: **boomerang-v3 v0.3.2 UPDATED** — Agent bash permissions expanded: `basename`, `diff`, `cp`, `which` added. Orchestrator clarified: CAN edit docs, delegates code. Parallel execution guidance added. All 30 agent files synced between `.opencode/agents/` and `boomerang-v3/.opencode/agents/`.

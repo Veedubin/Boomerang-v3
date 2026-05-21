@@ -213,13 +213,13 @@ Same pattern as boomerang-queue: two-stage build, python:3.11-slim, non-root use
 | `METRICS_ENABLED` | bool | `true` | No | Enable Prometheus metrics at `/metrics` |
 | `DASHBOARD_ENABLED` | bool | `true` | No | Enable telemetry dashboard at `/dashboard` |
 | `TELEMETRY_ENABLED` | bool | `true` | No | Persist telemetry to PostgreSQL |
-| `TELEMETRY_DB_URL` | string | `postgresql://postgres:password@localhost:5434/postgres` | Conditional | PostgreSQL URL for telemetry (required if `TELEMETRY_ENABLED=true`) |
+| `TELEMETRY_DB_URL` | string | `{env:TELEMETRY_DB_URL}` | Conditional | PostgreSQL URL for telemetry (required if `TELEMETRY_ENABLED=true`) |
 
 ### 5.2 boomerang-queue Environment Variables
 
 | Variable | Type | Default | Required | Description |
 |----------|------|---------|----------|-------------|
-| `MEMINI_DB_URL` | string | `postgresql://postgres:password@localhost:5434/postgres` | **Yes** | PostgreSQL connection URL (shared with memini-ai) |
+| `MEMINI_DB_URL` | string | `{env:MEMINI_DB_URL}` | **Yes** | PostgreSQL connection URL (shared with memini-ai) |
 | `BOOMERANG_TENANT_ID` | string | `default` | No | Tenant identifier for multi-tenant isolation |
 | `LOG_LEVEL` | string | `INFO` | No | Logging level (DEBUG, INFO, WARNING, ERROR) |
 
@@ -227,7 +227,7 @@ Same pattern as boomerang-queue: two-stage build, python:3.11-slim, non-root use
 
 | Variable | Type | Default | Required | Description |
 |----------|------|---------|----------|-------------|
-| `MEMINI_DB_URL` | string | `postgresql://postgres:password@localhost:5433/memini` | **Yes** | PostgreSQL connection URL (pgvector extension required) |
+| `MEMINI_DB_URL` | string | `{env:MEMINI_DB_URL}` | **Yes** | PostgreSQL connection URL (pgvector extension required) |
 | `MEMINI_LOG_LEVEL` | string | `INFO` | No | Logging level |
 
 ---
@@ -292,7 +292,7 @@ config:
         type: string
         description: PostgreSQL connection URL
         examples:
-          - postgresql://postgres:password@localhost:5434/postgres
+          - postgresql://user:password@localhost:5434/postgres  # Set via .env
       tenant_id:
         type: string
         default: default
@@ -334,7 +334,7 @@ config:
   description: Configure PostgreSQL connection and tenant settings
   env:
     - name: MEMINI_DB_URL
-      example: postgresql://postgres:password@localhost:5434/postgres
+      example: postgresql://user:password@localhost:5434/postgres  # Set via .env
       value: "{{boomerang-queue.db_url}}"
     - name: BOOMERANG_TENANT_ID
       example: default
@@ -673,7 +673,7 @@ services:
     cap_drop:
       - ALL
     environment:
-      MEMINI_DB_URL: postgresql://postgres:password@localhost:5434/postgres
+      MEMINI_DB_URL: ${MEMINI_DB_URL:-postgresql://user:password@localhost:5434/postgres}
       BOOMERANG_TENANT_ID: default
     ports:
       - "8000:8000"
@@ -772,7 +772,7 @@ docker build -t boomerang-queue:local ./boomerang-queue
 docker run -p 8123:8123 -e OLLAMA_CLOUD_BASE_URL=https://ollama.com/v1 boomerang-proxy:local
 
 # Queue (needs PostgreSQL)
-docker run -p 8000:8000 -e MEMINI_DB_URL=postgresql://postgres:password@host.docker.internal:5434/postgres boomerang-queue:local
+docker run -p 8000:8000 -e MEMINI_DB_URL=postgresql://user:password@host.docker.internal:5434/postgres boomerang-queue:local
 ```
 
 ### Inspect multi-arch manifest

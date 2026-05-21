@@ -16,13 +16,16 @@ permission:
   question: allow
   doom_loop: allow
   tool:
-    "memini-ai-dev_*": allow
-    "searxng_*": allow
-    "markitdown_*": allow
-    "github-mcp_*": allow
-    "playwright_*": allow
-    "webfetch": allow
-    "websearch": allow
+    "memini-ai-dev_query_memories": allow
+    "memini-ai-dev_add_memory": allow
+    # GH MCP for remote operations
+    "github-mcp_create_branch": allow
+    "github-mcp_create_or_update_file": allow
+    "github-mcp_push_files": allow
+    "github-mcp_get_file_contents": allow
+    "github-mcp_create_pull_request": allow
+    "github-mcp_create_issue": allow
+    "github-mcp_update_issue": allow
   edit: deny
   bash:
     "git *": allow

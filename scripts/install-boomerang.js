@@ -77,7 +77,7 @@ const MCP_TEMPLATES = {
     type: 'local',
     command: ['uvx', '--from', 'memini-ai-dev', 'memini-ai', '--stdio'],
     environment: {
-      MEMINI_DB_URL: 'postgresql://postgres:password@localhost:5434/postgres',
+      MEMINI_DB_URL: process.env.MEMINI_DB_URL || 'postgresql://user:password@localhost:5434/postgres',
       MEMINI_EMBEDDING_DIM: '384',
       MEMINI_TRUST_ENGINE: 'true',
       MEMINI_MEMORY_GRAPH: 'true',
@@ -97,7 +97,7 @@ const MCP_TEMPLATES = {
     type: 'local',
     command: ['uv', 'run', '--project', './boomerang-queue', 'python', '-m', 'boomerang_queue', '--stdio'],
     environment: {
-      MEMINI_DB_URL: 'postgresql://postgres:password@localhost:5434/postgres',
+      MEMINI_DB_URL: process.env.MEMINI_DB_URL || 'postgresql://user:password@localhost:5434/postgres',
       BOOMERANG_TENANT_ID: 'default',
     },
     timeout: 60000,

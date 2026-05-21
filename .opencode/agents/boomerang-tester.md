@@ -16,13 +16,11 @@ permission:
   question: allow
   doom_loop: allow
   tool:
-    "memini-ai-dev_*": allow
-    "searxng_*": allow
-    "markitdown_*": allow
-    "github-mcp_*": allow
-    "playwright_*": allow
-    "webfetch": allow
-    "websearch": allow
+    "memini-ai-dev_query_memories": allow
+    "memini-ai-dev_add_memory": allow
+    "memini-ai-dev_adjust_trust": allow
+    "memini-ai-dev_get_trust_score": allow
+    "memini-ai-dev_search_project": allow
   edit: allow
   bash:
     "basename *": allow

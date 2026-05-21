@@ -13,6 +13,106 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { MemoryEntry, SearchOptions } from './schema.js';
 
 // ============================================================================
+// Security: Environment Variable Allowlist
+// ============================================================================
+// Only pass explicitly whitelisted environment variables to the child Python
+// process. This prevents leaking secrets like GITHUB_PERSONAL_ACCESS_TOKEN,
+// OLLAMA_API_KEY, or any other sensitive env vars from the OpenCode parent
+// process. See SECURITY.md H4 for rationale.
+//
+// The memini-ai-dev Python server uses pydantic-settings with env_prefix="MEMINI_"
+// and explicit aliases for some vars. Only vars that the child process actually
+// needs are included here.
+// ============================================================================
+
+const ALLOWED_ENV_VARS: readonly string[] = [
+  // Python runtime
+  'PYTHONUNBUFFERED',  // Always set to '1' for unbuffered output
+  'PATH',              // Required for Python to find executables
+  'HOME',              // Required for Python to find user home (pip cache, etc.)
+  'LANG',              // Locale setting for Python
+  'LC_ALL',            // Locale override for Python
+  'PYTHONPATH',        // Python module search path (if set)
+  'VIRTUAL_ENV',       // Virtual environment path (if running in venv)
+
+  // memini-ai-dev database connection
+  'MEMINI_DB_URL',     // PostgreSQL connection string (primary config)
+  'DB_SSLMODE',        // PostgreSQL SSL mode (alias, no MEMINI_ prefix)
+  'DB_SSLROOTCERT',    // Path to SSL root certificate (alias)
+
+  // memini-ai-dev feature gates (pydantic-settings aliases)
+  'THOUGHT_CHAINS',            // Enable persistent thought chains
+  'TRUST_ENGINE',             // Enable trust scoring
+  'MEMORY_GRAPH',             // Enable memory graph
+  'AUTO_EXTRACT',             // Enable auto-extraction
+  'AUTO_EXTRACT_TURNS',       // Turns between auto-extractions
+  'TIERED_LOADING',            // Enable tiered loading
+  'TIER0_MAX_TOKENS',         // Tier 0 max tokens
+  'TIER1_MAX_TOKENS',         // Tier 1 max tokens
+  'KG_ENABLED',               // Enable knowledge graph
+  'MULTI_PEER_ENABLED',       // Enable multi-peer
+  'MULTI_PEER_GUEST_SHARING', // Allow guest sharing
+  'DIALECTIC_ENABLED',        // Enable dialectic reasoning
+  'DECAY_ENABLED',            // Enable memory decay
+  'USER_MODELING',            // Enable user modeling
+
+  // memini-ai-dev MEMINI_-prefixed config (pydantic env_prefix)
+  'MEMINI_PRECISION',          // Model precision (fp16, fp32)
+  'MEMINI_DEVICE',             // Device override (cpu, cuda, etc.)
+  'MEMINI_USE_GPU',            // Use GPU flag
+  'MEMINI_EMBEDDING_DIM',      // Embedding dimension (384 or 1024)
+  'MEMINI_BATCH_SIZE',         // Batch size for embedding
+  'MEMINI_TABLE_NAME',         // Database table name
+  'MEMINI_PROJECT_ID',         // Project ID
+  'MEMINI_LOG_LEVEL',          // Logging level
+  'MEMINI_CHUNK_SIZE',         // Indexer chunk size
+  'MEMINI_CHUNK_OVERLAP',      // Indexer chunk overlap
+  'MEMINI_DB_POOL_SIZE',       // DB pool size
+  'MEMINI_DB_MIN_SIZE',        // DB min pool size
+  'MEMINI_DB_MAX_SIZE',        // DB max pool size
+  'MEMINI_TRUST_THRESHOLD_ARCHIVE',   // Trust archive threshold
+  'MEMINI_TRUST_THRESHOLD_PROMOTE',   // Trust promote threshold
+  'MEMINI_TRUST_DELTA_USE',           // Trust delta on use
+  'MEMINI_TRUST_DELTA_IGNORED',       // Trust delta on ignore
+  'MEMINI_TRUST_DELTA_CORRECT',       // Trust delta on correction
+  'MEMINI_TRUST_DELTA_CONFIRM',       // Trust delta on confirmation
+  'MEMINI_WORKERS',            // Worker count
+  'MEMINI_LLM_URL',           // LLM URL (alias: LLM_URL)
+
+  // LLM configuration (aliases without MEMINI_ prefix)
+  'LLM_URL',                  // LLM URL for dialectic reasoning
+  'LLM_MODEL',                 // LLM model for dialectic reasoning
+
+  // HuggingFace / sentence-transformers cache
+  'SENTENCE_TRANSFORMERS_CACHE', // Model cache directory
+  'TRANSFORMERS_CACHE',          // HuggingFace transformers cache
+  'HF_HOME',                     // HuggingFace home directory
+] as const;
+
+/**
+ * Build a minimal environment object for the child Python process.
+ * Only includes whitelisted variables that exist in process.env.
+ * This prevents leaking secrets like GITHUB_PERSONAL_ACCESS_TOKEN or
+ * OLLAMA_API_KEY to child processes.
+ */
+function buildChildEnv(): Record<string, string> {
+  const env: Record<string, string> = {
+    PYTHONUNBUFFERED: '1', // Always required for unbuffered Python output
+  };
+
+  for (const key of ALLOWED_ENV_VARS) {
+    // Skip PYTHONUNBUFFERED since we always set it above
+    if (key === 'PYTHONUNBUFFERED') continue;
+    const value = process.env[key];
+    if (value !== undefined && value !== '') {
+      env[key] = value;
+    }
+  }
+
+  return env;
+}
+
+// ============================================================================
 // Type Definitions
 // ============================================================================
 
@@ -252,10 +352,11 @@ export class MeminiClient {
 
     try {
       // Create stdio transport - SDK handles process spawning
+      // Security: Only pass whitelisted env vars (see ALLOWED_ENV_VARS above)
       this._transport = new StdioClientTransport({
         command: 'python',
         args: ['-m', 'memini_ai.server'],
-        env: { ...process.env, PYTHONUNBUFFERED: '1' },
+        env: buildChildEnv(),
       });
 
       // Create MCP client

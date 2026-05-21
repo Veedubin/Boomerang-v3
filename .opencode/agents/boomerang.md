@@ -16,13 +16,19 @@ permission:
   question: allow
   doom_loop: allow
   tool:
-    "memini-ai-dev_*": allow
-    "searxng_*": allow
-    "markitdown_*": allow
-    "github-mcp_*": allow
-    "playwright_*": allow
-    "webfetch": allow
-    "websearch": allow
+    # Core memory operations
+    "memini-ai-dev_query_memories": allow
+    "memini-ai-dev_add_memory": allow
+    "memini-ai-dev_get_status": allow
+    "memini-ai-dev_adjust_trust": allow
+    "memini-ai-dev_get_trust_score": allow
+    "memini-ai-dev_list_peers": allow
+    # Thought chains for planning
+    "memini-ai-dev_add_thought": allow
+    "memini-ai-dev_start_thought_chain": allow
+    "memini-ai-dev_get_thought_chain": allow
+    "memini-ai-dev_pause_thought_chain": allow
+    "memini-ai-dev_resume_thought_chain": allow
   edit: allow
   bash:
     "*": ask

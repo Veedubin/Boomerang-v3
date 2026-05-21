@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenCode Plugin](https://img.shields.io/badge/OpenCode-Plugin-ff6b35?style=flat-square)](https://opencode.ai)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square)](https://www.typescriptlang.org/)
-[![v0.4.3](https://img.shields.io/badge/v0.4.3-memini--ai-2ecc71?style=flat-square)](https://github.com/Veedubin/Boomerang-v3/releases/tag/v0.4.3)
+[![v0.5.0](https://img.shields.io/badge/v0.5.0-memini--ai-2ecc71?style=flat-square)](https://github.com/Veedubin/Boomerang-v3/releases/tag/v0.5.0)
 
 *Intelligent multi-agent coordination for OpenCode with memini-ai memory.*
 
@@ -49,7 +49,7 @@ memini-ai includes a live D3.js visualization for the knowledge graph:
 
 ```bash
 cd memini-ai-dev
-export MEMINI_DB_URL="postgresql://postgres:password@localhost:5432/postgres"
+export MEMINI_DB_URL="postgresql://user:password@localhost:5432/postgres"  # Set your actual DB URL
 uvx --from memini-ai-dev memini-ai --server --port 8000
 ```
 
@@ -75,7 +75,7 @@ Add to your `.opencode/opencode.json`. If using **Ollama Cloud**, ensure your pr
       "type": "local",
       "command": ["uvx", "--from", "memini-ai-dev", "memini-ai", "--stdio"],
       "environment": {
-        "MEMINI_DB_URL": "postgresql://postgres:password@localhost:5434/postgres",
+        "MEMINI_DB_URL": "{env:MEMINI_DB_URL}",
         "MEMINI_EMBEDDING_DIM": "384",
         "MEMINI_TRUST_ENGINE": "true",
         "MEMINI_MEMORY_GRAPH": "true",
@@ -100,7 +100,7 @@ Add to your `.opencode/opencode.json`. If using **Ollama Cloud**, ensure your pr
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `MEMINI_DB_URL` | PostgreSQL connection URL | `postgresql://postgres:password@localhost:5434/postgres` |
+| `MEMINI_DB_URL` | PostgreSQL connection URL | Set via `.env` (see `.env.example`) |
 | `MEMINI_PROJECT_ID` | Project namespace | auto-generated |
 | `MEMINI_EMBEDDING_DIM` | 1024 or 384 | 1024 |
 | `MEMINI_DEVICE` | auto, gpu, cpu | auto |
@@ -125,7 +125,7 @@ docker run -d --name postgres-test \
 
 ```bash
 cd memini-ai-dev
-export MEMINI_DB_URL="postgresql://postgres:password@localhost:5434/postgres"
+export MEMINI_DB_URL="postgresql://user:password@localhost:5434/postgres"  # Set your actual DB URL
 uvx --from memini-ai-dev memini-ai --stdio
 ```
 
@@ -293,13 +293,10 @@ boomerang-v3/
 
 ## Release History
 
+- **v0.5.0** — Agent permission overhaul: replaced wildcard tool patterns with explicit allow-lists per agent role. Security fix: boomerang-release no longer has GitHub MCP access (local-only). boomerang-git now has explicit GitHub MCP tools for remote operations. ~57-73% reduction in tool description tokens per request.
 - **v0.4.3** — Fixed critical env var mismatch for thought chains: `MEMINI_THOUGHT_CHAINS_ENABLED` → `THOUGHT_CHAINS`
 - **v0.4.2** — Removed deprecated `sequential-thinking` references, cleaned up orchestrator SKILL.md
 - **v0.4.1** — Documentation refresh, stale version references corrected across monorepo
-- **v3.0.0** — memini-ai integration: Trust engine, knowledge graph, tiered loading, PostgreSQL/pgvector
-- **v4.0.0** (boomerang-v2) — Orchestrator as pure decision layer, OpenCode handles execution
-- **v3.0.0** (boomerang-v2) — LanceDB → Qdrant migration
-- **v2.0.0** (boomerang-v2) — First stable with built-in memory
 
 ---
 

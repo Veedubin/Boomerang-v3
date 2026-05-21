@@ -16,13 +16,29 @@ permission:
   question: allow
   doom_loop: allow
   tool:
-    "memini-ai-dev_*": allow
-    "searxng_*": allow
-    "markitdown_*": allow
-    "github-mcp_*": allow
-    "playwright_*": allow
-    "webfetch": allow
-    "websearch": allow
+    # Full memory suite
+    "memini-ai-dev_query_memories": allow
+    "memini-ai-dev_add_memory": allow
+    "memini-ai-dev_get_status": allow
+    "memini-ai-dev_adjust_trust": allow
+    "memini-ai-dev_get_trust_score": allow
+    # Full KG suite (research authority)
+    "memini-ai-dev_query_kg": allow
+    "memini-ai-dev_extract_entities": allow
+    "memini-ai-dev_get_entity_graph": allow
+    "memini-ai-dev_get_inference_chain": allow
+    "memini-ai-dev_search_entities": allow
+    "memini-ai-dev_create_relationship": allow
+    "memini-ai-dev_get_relationship_summary": allow
+    # Thought chains
+    "memini-ai-dev_add_thought": allow
+    "memini-ai-dev_start_thought_chain": allow
+    # Project search
+    "memini-ai-dev_search_project": allow
+    "memini-ai-dev_index_project": allow
+    "memini-ai-dev_get_file_contents": allow
+    # Markitdown for doc review
+    "markitdown_convert_to_markdown": allow
   edit: allow
   bash:
     "basename *": allow

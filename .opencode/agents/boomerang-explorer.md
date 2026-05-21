@@ -16,13 +16,9 @@ permission:
   question: allow
   doom_loop: allow
   tool:
-    "memini-ai-dev_*": allow
-    "searxng_*": allow
-    "markitdown_*": allow
-    "github-mcp_*": allow
-    "playwright_*": allow
-    "webfetch": allow
-    "websearch": allow
+    "memini-ai-dev_search_project": allow
+    "memini-ai-dev_index_project": allow
+    "memini-ai-dev_get_file_contents": allow
   edit: deny
   bash:
     "ls *": allow
