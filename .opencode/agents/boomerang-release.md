@@ -1,7 +1,7 @@
 ---
-description: Boomerang Release v3 - Release automation using devstral-small-2:cloud (Ollama Cloud) for boomerang-v3 packages.
+description: Boomerang Release v3 - Release automation using devstral-small-2:24b-cloud (Ollama Cloud) for boomerang-v3 packages.
 mode: subagent
-model: ollama-cloud/devstral-small-2:cloud
+model: ollama-cloud/devstral-small-2:24b-cloud
 steps: 40
 permission:
   read:

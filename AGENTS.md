@@ -25,7 +25,7 @@ Failure to use memini-ai causes context loss, duplicate work, and wasted tokens.
 | **boomerang-git** | boomerang-git | minimax-m2.7:cloud | Fast and highly reliable for standard professional productivity and executing structured terminal commands. |
 | **boomerang-writer** | boomerang-writer | gemma4:31b-cloud | Frontier-level instruction following; excels at translating technical logic into clean, readable Markdown. |
 | **boomerang-scraper** | boomerang-scraper | qwen3.5:cloud | Strong, lightweight generalist with excellent tool-use capabilities for reliable data extraction. |
-| **boomerang-release** | boomerang-release | devstral-small-2:cloud | Fast 24B model perfect for targeted automation tasks like bumping versions and summarizing changelogs. |
+| **boomerang-release** | boomerang-release | devstral-small-2:24b-cloud | Fast 24B model perfect for targeted automation tasks like bumping versions and summarizing changelogs. |
 | **boomerang-agent-builder** | boomerang-agent-builder | glm-5.1:cloud | Excels at long-horizon tasks and ambiguous problems; ideal for writing and optimizing new agent logic. |
 | **researcher** | researcher | kimi-k2.6:cloud | Advances practical capabilities in long-horizon research, data synthesis, and multi-step tool execution. |
 | **mcp-specialist** | mcp-specialist | glm-5.1:cloud | SOTA on Terminal-Bench 2.0; the most capable model for debugging servers and designing complex tool protocols. |
@@ -88,7 +88,7 @@ The orchestrator MUST delegate based on these rules. No exceptions.
 | Git operations | `boomerang-git` | minimax-m2.7:cloud | Everything else |
 | Web research / scraping | `boomerang-scraper` | qwen3.5:cloud | `general` |
 | MCP tool design / server debug | `mcp-specialist` | glm-5.1:cloud | `general` |
-| Release automation | `boomerang-release` | devstral-small-2:cloud | Everything else |
+| Release automation | `boomerang-release` | devstral-small-2:24b-cloud | Everything else |
 
 > **Note**: User has Ollama Cloud with **3 concurrent model limit**. Models are configured via `install-agents.js --primary=<model> --secondary=<model>` or by editing `.opencode/opencode.json`.
 

@@ -55,7 +55,7 @@ const PROVIDERS = {
       'minimax-m2.7:cloud': { name: 'MiniMax M2.7 (Cloud)' },
       'gemma4:31b-cloud': { name: 'Gemma 4 31B (Cloud)' },
       'qwen3.5:cloud': { name: 'Qwen 3.5 (Cloud)' },
-      'devstral-small-2:cloud': { name: 'Devstral Small 2 (Cloud)' },
+      'devstral-small-2:24b-cloud': { name: 'Devstral Small 2 (Cloud)' },
     },
   },
   openai: {
