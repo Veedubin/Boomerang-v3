@@ -41,24 +41,26 @@ const ICON = {
 
 const PROVIDERS = {
   'ollama-cloud': {
+    providerId: 'ollama',  // OpenCode provider key (matches root .opencode/opencode.json)
     npm: '@ai-sdk/openai-compatible',
     name: 'Ollama Cloud',
     options: { baseURL: 'https://ollama.com/v1' },
-    needsProxy: true,
+    needsProxy: false,  // 2026-05-27: Ollama Cloud does not enforce the advertised 3-slot limit; proxy is deprecated
     models: {
-      'kimi-k2.6:cloud': { name: 'Kimi K2.6 (Cloud)' },
-      'glm-5.1:cloud': { name: 'GLM 5.1 (Cloud)' },
-      'deepseek-v4-pro:cloud': { name: 'DeepSeek V4 Pro (Cloud)' },
-      'devstral-2:123b-cloud': { name: 'Devstral 2 (Cloud)' },
-      'deepseek-v4-flash:cloud': { name: 'DeepSeek V4 Flash (Cloud)' },
-      'qwen3-coder-next:cloud': { name: 'Qwen3 Coder Next (Cloud)' },
-      'minimax-m2.7:cloud': { name: 'MiniMax M2.7 (Cloud)' },
-      'gemma4:31b-cloud': { name: 'Gemma 4 31B (Cloud)' },
-      'qwen3.5:cloud': { name: 'Qwen 3.5 (Cloud)' },
-      'devstral-small-2:24b-cloud': { name: 'Devstral Small 2 (Cloud)' },
+      'kimi-k2.6': { name: 'Kimi K2.6 (Cloud)' },
+      'glm-5.1': { name: 'GLM 5.1 (Cloud)' },
+      'deepseek-v4-pro': { name: 'DeepSeek V4 Pro (Cloud)' },
+      'devstral-2:123b': { name: 'Devstral 2 (Cloud)' },
+      'deepseek-v4-flash': { name: 'DeepSeek V4 Flash (Cloud)' },
+      'qwen3-coder-next': { name: 'Qwen3 Coder Next (Cloud)' },
+      'minimax-m2.7': { name: 'MiniMax M2.7 (Cloud)' },
+      'gemma4:31b': { name: 'Gemma 4 31B (Cloud)' },
+      'qwen3.5': { name: 'Qwen 3.5 (Cloud)' },
+      'devstral-small-2:24b': { name: 'Devstral Small 2 (Cloud)' },
     },
   },
   openai: {
+    providerId: 'openai',
     npm: 'openai',
     name: 'OpenAI',
     options: { baseURL: 'https://api.openai.com/v1' },
@@ -93,16 +95,7 @@ const MCP_TEMPLATES = {
     timeout: 60000,
     enabled: true,
   },
-  'boomerang-queue': {
-    type: 'local',
-    command: ['uv', 'run', '--project', './boomerang-queue', 'python', '-m', 'boomerang_queue', '--stdio'],
-    environment: {
-      MEMINI_DB_URL: process.env.MEMINI_DB_URL || 'postgresql://user:password@localhost:5434/postgres',
-      BOOMERANG_TENANT_ID: 'default',
-    },
-    timeout: 60000,
-    enabled: true,
-  },
+
 };
 
 // ─── Default opencode.json Values ───────────────────────────
@@ -451,7 +444,8 @@ function mergeOpencodeConfig(existing, providerName, primary, secondary, exclude
   }
 
   // Deep merge: preserve existing provider entries, add/merge our provider
-  result.provider[providerName] = deepMerge(result.provider[providerName] || {}, providerEntry);
+  const providerKey = provider.providerId || providerName;
+  result.provider[providerKey] = deepMerge(result.provider[providerKey] || {}, providerEntry);
 
   // 3. mcp — shallow merge by server name, skip excluded
   //    Support short names: "queue" matches "boomerang-queue", "memini" matches "memini-ai-dev"
@@ -482,7 +476,7 @@ function mergeOpencodeConfig(existing, providerName, primary, secondary, exclude
   result.compaction = result.compaction || DEFAULT_OPENCODE.compaction;
 
   // 9. small_model — set only if absent
-  result.small_model = result.small_model || `${providerName}/${secondary || primary || Object.keys(provider.models)[0]}`;
+  result.small_model = result.small_model || `${providerKey}/${secondary || primary || Object.keys(provider.models)[0]}`;
 
   // 10. server — set only if absent
   result.server = result.server || { port: 4096 };
@@ -549,9 +543,9 @@ ${ANSI.bold}USAGE${ANSI.reset}
 
 ${ANSI.bold}OPTIONS${ANSI.reset}
   --provider <name>     Provider preset: ollama-cloud (default), openai
-  --primary <model>     Primary model (e.g., kimi-k2.6:cloud)
-  --secondary <model>   Secondary model (e.g., glm-5.1:cloud)
-  --exclude <list>      Comma-separated services to skip: memini-ai-dev,queue
+  --primary <model>     Primary model (e.g., kimi-k2.6)
+  --secondary <model>   Secondary model (e.g., glm-5.1)
+  --exclude <list>      Comma-separated services to skip: memini-ai-dev
   --docker              Check Docker and print compose instructions
   --dry-run             Preview changes without writing files
   --yes, -y             Skip confirmation prompts
@@ -565,14 +559,14 @@ ${ANSI.bold}EXIT CODES${ANSI.reset}
   2  Cancelled by user
 
 ${ANSI.bold}PROVIDERS${ANSI.reset}
-  ollama-cloud   10 models, needsProxy=true, baseURL=https://ollama.com/v1
+  ollama-cloud   10 models, needsProxy=false, baseURL=https://ollama.com/v1
   openai          2 models, needsProxy=false
 
 ${ANSI.bold}EXAMPLES${ANSI.reset}
   node install-boomerang.js                    # Install with defaults
   node install-boomerang.js --dry-run          # Preview changes
   node install-boomerang.js --provider openai   # Use OpenAI provider
-  node install-boomerang.js --exclude queue    # Skip boomerang-queue MCP
+  node install-boomerang.js --exclude memini-ai-dev  # Skip memini-ai-dev MCP
   node install-boomerang.js --yes              # Non-interactive
 `);
 }
@@ -883,6 +877,14 @@ function getProviderPresets() {
 }
 
 /**
+ * Return full provider preset configs (for testing internal fields like providerId).
+ * @returns {object} Map of preset name → full config (including providerId, models, options, etc.)
+ */
+function getProviderPresetsRaw() {
+  return PROVIDERS;
+}
+
+/**
  * Filter MCP server config by excluding specified service names.
  * @param {object} config - Config object with mcpServers or mcp key
  * @param {string[]} exclude - Service names to exclude
@@ -936,6 +938,7 @@ export {
   deepMergeConfig,
   sha256,
   getProviderPresets,
+  getProviderPresetsRaw,
   filterExcluded,
   mergeAgentsMd,
   checkConfigMismatch,

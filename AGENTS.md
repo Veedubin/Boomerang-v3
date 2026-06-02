@@ -90,7 +90,7 @@ The orchestrator MUST delegate based on these rules. No exceptions.
 | MCP tool design / server debug | `mcp-specialist` | glm-5.1:cloud | `general` |
 | Release automation | `boomerang-release` | devstral-small-2:24b-cloud | Everything else |
 
-> **Note**: User has Ollama Cloud with **3 concurrent model limit**. Models are configured via `install-agents.js --primary=<model> --secondary=<model>` or by editing `.opencode/opencode.json`.
+> **Note**: User has Ollama Cloud with **10 concurrent model limit**. Models are configured via `install-agents.js --primary=<model> --secondary=<model>` or by editing `.opencode/opencode.json`.
 
 ### Orchestrator Permissions (v3.0.0)
 
@@ -385,6 +385,7 @@ IDLE → MEMORY_QUERY → SEQUENTIAL_THINK → PLAN → DELEGATE → GIT_CHECK �
 
 ## Review Notes
 
+- **2026-06-02 (Session 6 follow-up)**: **boomerang-v3 v0.5.1 RELEASED** — Critical fix: provider `ollama` was missing its `models` block in `opencode.json` (root cause of "Kimi K2.6 is not valid" / `ProviderModelNotFoundError`). Fixes: (1) added 10-entry `models` block to provider `ollama` in 3 `opencode.json` files (root, boomerang-v3 source, node_modules install). (2) Fixed install script `PROVIDERS` table: removed bogus `:cloud` model-name suffix from keys (Ollama API uses bare names), added `providerId` field so the CLI preset name (`ollama-cloud`) is decoupled from the generated `provider.{}` key (`ollama`). (3) 15 agent `.md` files updated to reference `ollama/<model>` (no `ollama-cloud/` prefix, no `:cloud` suffix). (4) 4 new regression tests (131/131 pass, 0 lint, 0 tsc errors). No OpenCode restart required — on-disk config is correct. New install via `npm install` will pull the fix permanently.
 - **2026-05-21**: **boomerang-v3 v0.5.0 RELEASED** — Agent permission overhaul v0.5.0: replaced wildcard tool patterns with explicit allow-lists per agent role. Security improvements: boomerang-release local-only, boomerang-git gets remote GitHub MCP. ~57-73% token reduction per request.
 - **2026-05-20**: **boomerang-v3 v0.4.3 RELEASED** — Fixed critical env var mismatch for thought chains: `MEMINI_THOUGHT_CHAINS_ENABLED` → `THOUGHT_CHAINS`. The memini-ai server uses `alias="THOUGHT_CHAINS"` (not `MEMINI_THOUGHT_CHAINS_ENABLED`). Requires OpenCode restart to load the corrected config.
 - **2026-05-20**: **boomerang-v3 v0.4.2 RELEASED** — Removed deprecated `sequential-thinking` references from README, skills, and orchestrator SKILL.md. Added `MEMINI_THOUGHT_CHAINS_ENABLED: "true"` to root `opencode.json` (later corrected to `THOUGHT_CHAINS`).
@@ -394,7 +395,7 @@ IDLE → MEMORY_QUERY → SEQUENTIAL_THINK → PLAN → DELEGATE → GIT_CHECK �
 - **2026-05-19**: **boomerang-v3 v0.3.1 RELEASED** — Added common bash commands (ls, head, tail, cat, grep, find, cd, echo) to 7 agent permission files. Tag `v0.3.1` pushed to GitHub.
 - **2026-05-19**: **boomerang-v3 v0.3.0 RELEASED** — Agent permissions overhaul: `mode: subagent` + comprehensive tool permissions for all 30 agent files. SQL injection fix in boomerang-queue. Phase 3 Ollama Cloud Proxy design doc created. Tag `v0.3.0` pushed to GitHub.
 - **2026-05-19**: **memini-ai-dev v0.2.8 RELEASED** — Ruff formatting pass (isort, whitespace, imports) across 30 files. No functional changes. Tag `v0.2.8` pushed to GitHub.
-- **2026-05-19**: Updated to Ollama Cloud models — All agents reassigned to Ollama Cloud models with 3 concurrent limit. Created `.opencode/opencode.json` with `ollama-cloud` provider. Provider ID: `ollama`, baseURL: `https://ollama.com/v1`.
+- **2026-05-19**: Updated to Ollama Cloud models — All agents reassigned to Ollama Cloud models with 10 concurrent limit. Created `.opencode/opencode.json` with `ollama-cloud` provider. Provider ID: `ollama`, baseURL: `https://ollama.com/v1`.
 - **2026-05-18**: v3.0.0 RELEASED — memini-ai integration: Trust engine, knowledge graph, tiered loading. PostgreSQL with pgvector backend. 645 tests passing in memini-ai.
 - **2026-05-06**: v4.1.0 (boomerang-v2) — Protocol enforcement: MANDATORY. Parallel agent launching.
 - **2026-05-03**: v4.0.0 (boomerang-v2) — Orchestrator as pure decision layer, OpenCode handles execution.

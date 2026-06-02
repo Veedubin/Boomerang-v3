@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenCode Plugin](https://img.shields.io/badge/OpenCode-Plugin-ff6b35?style=flat-square)](https://opencode.ai)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square)](https://www.typescriptlang.org/)
-[![v0.5.0](https://img.shields.io/badge/v0.5.0-memini--ai-2ecc71?style=flat-square)](https://github.com/Veedubin/Boomerang-v3/releases/tag/v0.5.0)
+[![v0.5.1](https://img.shields.io/badge/v0.5.1-memini--ai-2ecc71?style=flat-square)](https://github.com/Veedubin/Boomerang-v3/releases/tag/v0.5.1)
 
 *Intelligent multi-agent coordination for OpenCode with memini-ai memory.*
 
@@ -293,6 +293,7 @@ boomerang-v3/
 
 ## Release History
 
+- **v0.5.1** — Critical fix: provider `ollama` was missing its `models` block in `opencode.json` (caused "Kimi K2.6 is not valid" / "ProviderModelNotFoundError"). Install script `PROVIDERS` table also fixed: removed bogus `:cloud` model-name suffix (Ollama API uses bare names), added `providerId` field so the CLI preset name (`ollama-cloud`) is decoupled from the generated `provider.{}` key (`ollama`). 15 agent `.md` files updated to reference `ollama/<model>` (no `ollama-cloud/` prefix, no `:cloud` suffix). 4 new regression tests added (131/131 pass).
 - **v0.5.0** — Agent permission overhaul: replaced wildcard tool patterns with explicit allow-lists per agent role. Security fix: boomerang-release no longer has GitHub MCP access (local-only). boomerang-git now has explicit GitHub MCP tools for remote operations. ~57-73% reduction in tool description tokens per request.
 - **v0.4.3** — Fixed critical env var mismatch for thought chains: `MEMINI_THOUGHT_CHAINS_ENABLED` → `THOUGHT_CHAINS`
 - **v0.4.2** — Removed deprecated `sequential-thinking` references, cleaned up orchestrator SKILL.md
