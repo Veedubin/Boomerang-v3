@@ -25,7 +25,7 @@ Failure to use memini-ai causes context loss, duplicate work, and wasted tokens.
 | **boomerang-git** | boomerang-git | minimax-m2.7:cloud | Fast and highly reliable for standard professional productivity and executing structured terminal commands. |
 | **boomerang-writer** | boomerang-writer | gemma4:31b-cloud | Frontier-level instruction following; excels at translating technical logic into clean, readable Markdown. |
 | **boomerang-scraper** | boomerang-scraper | qwen3.5:cloud | Strong, lightweight generalist with excellent tool-use capabilities for reliable data extraction. |
-| **boomerang-release** | boomerang-release | devstral-small-2:cloud | Fast 24B model perfect for targeted automation tasks like bumping versions and summarizing changelogs. |
+| **boomerang-release** | boomerang-release | devstral-small-2:24b-cloud | Fast 24B model perfect for targeted automation tasks like bumping versions and summarizing changelogs. |
 | **boomerang-agent-builder** | boomerang-agent-builder | glm-5.1:cloud | Excels at long-horizon tasks and ambiguous problems; ideal for writing and optimizing new agent logic. |
 | **researcher** | researcher | kimi-k2.6:cloud | Advances practical capabilities in long-horizon research, data synthesis, and multi-step tool execution. |
 | **mcp-specialist** | mcp-specialist | glm-5.1:cloud | SOTA on Terminal-Bench 2.0; the most capable model for debugging servers and designing complex tool protocols. |
@@ -88,9 +88,9 @@ The orchestrator MUST delegate based on these rules. No exceptions.
 | Git operations | `boomerang-git` | minimax-m2.7:cloud | Everything else |
 | Web research / scraping | `boomerang-scraper` | qwen3.5:cloud | `general` |
 | MCP tool design / server debug | `mcp-specialist` | glm-5.1:cloud | `general` |
-| Release automation | `boomerang-release` | devstral-small-2:cloud | Everything else |
+| Release automation | `boomerang-release` | devstral-small-2:24b-cloud | Everything else |
 
-> **Note**: User has Ollama Cloud with **3 concurrent model limit**. Models are configured via `install-agents.js --primary=<model> --secondary=<model>` or by editing `.opencode/opencode.json`.
+> **Note**: User has Ollama Cloud with **10 concurrent model limit**. Models are configured via `install-agents.js --primary=<model> --secondary=<model>` or by editing `.opencode/opencode.json`.
 
 ### Orchestrator Permissions (v3.0.0)
 
@@ -394,7 +394,7 @@ IDLE → MEMORY_QUERY → SEQUENTIAL_THINK → PLAN → DELEGATE → GIT_CHECK �
 - **2026-05-19**: **boomerang-v3 v0.3.1 RELEASED** — Added common bash commands (ls, head, tail, cat, grep, find, cd, echo) to 7 agent permission files. Tag `v0.3.1` pushed to GitHub.
 - **2026-05-19**: **boomerang-v3 v0.3.0 RELEASED** — Agent permissions overhaul: `mode: subagent` + comprehensive tool permissions for all 30 agent files. SQL injection fix in boomerang-queue. Phase 3 Ollama Cloud Proxy design doc created. Tag `v0.3.0` pushed to GitHub.
 - **2026-05-19**: **memini-ai-dev v0.2.8 RELEASED** — Ruff formatting pass (isort, whitespace, imports) across 30 files. No functional changes. Tag `v0.2.8` pushed to GitHub.
-- **2026-05-19**: Updated to Ollama Cloud models — All agents reassigned to Ollama Cloud models with 3 concurrent limit. Created `.opencode/opencode.json` with `ollama-cloud` provider. Provider ID: `ollama`, baseURL: `https://ollama.com/v1`.
+- **2026-05-19**: Updated to Ollama Cloud models — All agents reassigned to Ollama Cloud models with 10 concurrent limit. Created `.opencode/opencode.json` with `ollama-cloud` provider. Provider ID: `ollama`, baseURL: `https://ollama.com/v1`.
 - **2026-05-18**: v3.0.0 RELEASED — memini-ai integration: Trust engine, knowledge graph, tiered loading. PostgreSQL with pgvector backend. 645 tests passing in memini-ai.
 - **2026-05-06**: v4.1.0 (boomerang-v2) — Protocol enforcement: MANDATORY. Parallel agent launching.
 - **2026-05-03**: v4.0.0 (boomerang-v2) — Orchestrator as pure decision layer, OpenCode handles execution.

@@ -30,3 +30,10 @@ npm-debug.log*
 
 # TypeScript incremental build
 *.tsbuildinfoarchive/
+
+# Python (for scripts/fix_perms.py)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python

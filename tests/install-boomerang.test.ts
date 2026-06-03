@@ -397,6 +397,73 @@ describe('provider presets', () => {
       : {};
     expect(presets['nonexistent_provider_xyz']).toBeUndefined();
   });
+
+  // 2026-06-02 (Session 6): Regression test for the providerId field.
+  // Bug was: install script used `ollama-cloud` as both the CLI preset key AND
+  // the opencode.json `provider.{}` key, so generated configs had
+  //   provider.ollama-cloud.models = { kimi-k2.6, ... }
+  // which doesn't match what agent `.md` files reference (`ollama/kimi-k2.6`).
+  // Fix: each preset now has a `providerId` field that is the actual key used
+  // in the generated `provider:{}` block. Preset name stays as the CLI key.
+  it('ollama-cloud preset has providerId === "ollama"', () => {
+    if (!installScript) return;
+    const getRaw = (installScript as unknown as Record<string, unknown>).getProviderPresetsRaw as
+      | (() => Record<string, Record<string, unknown>>)
+      | undefined;
+    if (!getRaw) return; // skip if export missing
+    const presets = getRaw();
+    const ollamaCloud = presets['ollama-cloud'];
+    if (!ollamaCloud) return;
+    expect(ollamaCloud.providerId).toBe('ollama');
+  });
+
+  it('openai preset has providerId === "openai"', () => {
+    if (!installScript) return;
+    const getRaw = (installScript as unknown as Record<string, unknown>).getProviderPresetsRaw as
+      | (() => Record<string, Record<string, unknown>>)
+      | undefined;
+    if (!getRaw) return;
+    const presets = getRaw();
+    const openai = presets['openai'];
+    if (!openai) return;
+    expect(openai.providerId).toBe('openai');
+  });
+
+  it('every preset has a non-empty providerId', () => {
+    if (!installScript) return;
+    const getRaw = (installScript as unknown as Record<string, unknown>).getProviderPresetsRaw as
+      | (() => Record<string, Record<string, unknown>>)
+      | undefined;
+    if (!getRaw) return;
+    const presets = getRaw();
+    for (const [name, preset] of Object.entries(presets)) {
+      expect(typeof preset.providerId, `preset ${name} providerId type`).toBe('string');
+      expect((preset.providerId as string).length, `preset ${name} providerId length`).toBeGreaterThan(0);
+    }
+  });
+
+  // 2026-06-02 (Session 6): Regression test for the :cloud suffix bug.
+  // Bug was: PROVIDERS table had model keys like `kimi-k2.6:cloud`, but the
+  // Ollama Cloud API uses bare names (`kimi-k2.6`). Generated configs
+  // referenced non-existent models.
+  it('preset model keys do not contain :cloud suffix', () => {
+    if (!installScript) return;
+    const getRaw = (installScript as unknown as Record<string, unknown>).getProviderPresetsRaw as
+      | (() => Record<string, Record<string, unknown>>)
+      | undefined;
+    if (!getRaw) return;
+    const presets = getRaw();
+    for (const [presetName, preset] of Object.entries(presets)) {
+      const models = preset.models as Record<string, unknown> | undefined;
+      if (!models || typeof models !== 'object') continue;
+      for (const modelKey of Object.keys(models)) {
+        expect(
+          modelKey.endsWith(':cloud'),
+          `preset ${presetName} model ${modelKey} has :cloud suffix (Ollama API uses bare names)`,
+        ).toBe(false);
+      }
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
