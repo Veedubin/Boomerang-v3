@@ -15,6 +15,7 @@
         "deepseek-v4-flash": { "name": "DeepSeek V4 Flash (Cloud)" },
         "qwen3-coder-next": { "name": "Qwen3 Coder Next (Cloud)" },
         "minimax-m2.7": { "name": "MiniMax M2.7 (Cloud)" },
+        "minimax-m3": { "name": "MiniMax M3 (Cloud)" },
         "gemma4:31b": { "name": "Gemma 4 31B (Cloud)" },
         "qwen3.5": { "name": "Qwen 3.5 (Cloud)" },
         "devstral-small-2:24b": { "name": "Devstral Small 2 24B (Cloud)" }
