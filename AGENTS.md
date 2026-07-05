@@ -1,5 +1,24 @@
 # Boomerang Agent Roster
 
+## Provider Configuration (Ollama Cloud & Alternatives)
+
+All projects in this workspace ship with **Ollama Cloud** as the default
+LLM provider. To switch to a different provider — local Ollama, Docker
+Model Runner, OpenAI, Anthropic, Google, OpenRouter, or any
+OpenAI-compatible endpoint — see:
+
+> **`~/Projects/MCP-Servers/docs/providers.md`** — the canonical
+> provider-switching guide. Covers 5 recipes (local Ollama, Docker
+> Model Runner, the Big Three, OpenRouter, custom endpoints), a
+> quick-reference for just changing which Ollama Cloud model each
+> agent uses, a 6-step migration checklist, and a troubleshooting
+> table for the common `ProviderModelNotFoundError`,
+> `Provider not found`, and `401 Unauthorized` errors.
+
+If you only want to swap which model each agent uses (and the model
+already exists in `provider.ollama.models`), the guide shows a `sed`
+one-liner that does it in seconds.
+
 ## ⚡ CRITICAL: memini-ai Memory Protocol (MUST FOLLOW)
 
 All agents **MUST** interact with memini-ai at every step:
@@ -9,7 +28,6 @@ All agents **MUST** interact with memini-ai at every step:
 
 Failure to use memini-ai causes context loss, duplicate work, and wasted tokens.
 
-
 ## Core Agents
 
 > **Note**: Models are configurable. Use `install-agents.js --primary=<model> --secondary=<model>` to customize.
@@ -17,24 +35,24 @@ Failure to use memini-ai causes context loss, duplicate work, and wasted tokens.
 | Agent | Skill | Recommended Ollama Cloud Model | Technical Justification |
 |-------|-------|------------------------------|------------------------|
 | **boomerang** | boomerang-orchestrator | kimi-k2.6:cloud | Specifically built for swarm-based task orchestration and proactive autonomous delegation. |
-| **boomerang-coder** | boomerang-coder | glm-5.1:cloud | Flagship for agentic engineering; achieves SOTA on SWE-Bench Pro for complex, multi-file generation. |
+| **boomerang-coder** | boomerang-coder | glm-5.2:cloud | Flagship for agentic engineering; achieves SOTA on SWE-Bench Pro for complex, multi-file generation. |
 | **boomerang-architect** | boomerang-architect | deepseek-v4-pro:cloud | Offers frontier reasoning with dedicated "thinking modes" for analyzing complex architectural trade-offs. |
 | **boomerang-explorer** | boomerang-explorer | devstral-2:123b-cloud | Explicitly designed to navigate codebases, trace dependencies, and map repository structures. |
 | **boomerang-tester** | boomerang-tester | deepseek-v4-flash:cloud | Massive 1M context window for ingesting deep error logs and codebase context quickly and efficiently. |
 | **boomerang-linter** | boomerang-linter | qwen3-coder-next:cloud | Highly optimized for agentic coding workflows; blazing fast for syntax formatting and style checks. |
-| **boomerang-git** | boomerang-git | minimax-m2.7:cloud | Fast and highly reliable for standard professional productivity and executing structured terminal commands. |
-| **boomerang-writer** | boomerang-writer | gemma4:31b-cloud | Frontier-level instruction following; excels at translating technical logic into clean, readable Markdown. |
+| **boomerang-git** | boomerang-git | minimax-m3:cloud | Fast and highly reliable for standard professional productivity and executing structured terminal commands. |
+| **boomerang-writer** | boomerang-writer | mistral-large-3:675b-cloud | Frontier-level instruction following; excels at translating technical logic into clean, readable Markdown. |
 | **boomerang-scraper** | boomerang-scraper | qwen3.5:cloud | Strong, lightweight generalist with excellent tool-use capabilities for reliable data extraction. |
 | **boomerang-release** | boomerang-release | devstral-small-2:24b-cloud | Fast 24B model perfect for targeted automation tasks like bumping versions and summarizing changelogs. |
-| **boomerang-agent-builder** | boomerang-agent-builder | glm-5.1:cloud | Excels at long-horizon tasks and ambiguous problems; ideal for writing and optimizing new agent logic. |
+| **boomerang-agent-builder** | boomerang-agent-builder | glm-5.2:cloud | Excels at long-horizon tasks and ambiguous problems; ideal for writing and optimizing new agent logic. |
 | **researcher** | researcher | kimi-k2.6:cloud | Advances practical capabilities in long-horizon research, data synthesis, and multi-step tool execution. |
-| **mcp-specialist** | mcp-specialist | glm-5.1:cloud | SOTA on Terminal-Bench 2.0; the most capable model for debugging servers and designing complex tool protocols. |
+| **mcp-specialist** | mcp-specialist | glm-5.2:cloud | SOTA on Terminal-Bench 2.0; the most capable model for debugging servers and designing complex tool protocols. |
 
 | Skill | Purpose | Model |
 |-------|---------|-------|
 | **boomerang-init** | Initialize and personalize agents for a project | kimi-k2.6:cloud |
 | **boomerang-handoff** | Wrap-up session. Updates docs, saves context | kimi-k2.6:cloud |
-| **boomerang-agent-builder** | Build new skills and sub-agents from patterns | glm-5.1:cloud |
+| **boomerang-agent-builder** | Build new skills and sub-agents from patterns | glm-5.2:cloud |
 
 ## Mandatory Routing Matrix (CODE-LEVEL ENFORCED)
 
@@ -77,17 +95,17 @@ The orchestrator MUST delegate based on these rules. No exceptions.
 |-----------|------------------|-------|-------------------|
 | Complex planning / orchestration | `boomerang` | kimi-k2.6:cloud | `general` |
 | Architecture / design decisions | `boomerang-architect` | deepseek-v4-pro:cloud | `general`, `boomerang-coder` |
-| Documentation writing | `boomerang-writer` | gemma4:31b-cloud | `general` |
+| Documentation writing | `boomerang-writer` | mistral-large-3:675b-cloud | `general` |
 | Session initialization | `boomerang-init` | kimi-k2.6:cloud | Everything else |
 | Session wrap-up / handoff | `boomerang-handoff` | kimi-k2.6:cloud | Everything else |
-| Skill/agent creation | `boomerang-agent-builder` | glm-5.1:cloud | `general` |
-| Fast code generation / bug fixes | `boomerang-coder` | glm-5.1:cloud | `general`, `boomerang-explorer` |
+| Skill/agent creation | `boomerang-agent-builder` | glm-5.2:cloud | `general` |
+| Fast code generation / bug fixes | `boomerang-coder` | glm-5.2:cloud | `general`, `boomerang-explorer` |
 | Code exploration / finding files | `boomerang-explorer` | devstral-2:123b-cloud | Everything else |
 | Writing / running tests | `boomerang-tester` | deepseek-v4-flash:cloud | `general`, `boomerang-coder` |
 | Linting / formatting | `boomerang-linter` | qwen3-coder-next:cloud | Everything else |
-| Git operations | `boomerang-git` | minimax-m2.7:cloud | Everything else |
+| Git operations | `boomerang-git` | minimax-m3:cloud | Everything else |
 | Web research / scraping | `boomerang-scraper` | qwen3.5:cloud | `general` |
-| MCP tool design / server debug | `mcp-specialist` | glm-5.1:cloud | `general` |
+| MCP tool design / server debug | `mcp-specialist` | glm-5.2:cloud | `general` |
 | Release automation | `boomerang-release` | devstral-small-2:24b-cloud | Everything else |
 
 > **Note**: User has Ollama Cloud with **10 concurrent model limit**. Models are configured via `install-agents.js --primary=<model> --secondary=<model>` or by editing `.opencode/opencode.json`.
@@ -385,6 +403,7 @@ IDLE → MEMORY_QUERY → SEQUENTIAL_THINK → PLAN → DELEGATE → GIT_CHECK �
 
 ## Review Notes
 
+- **2026-06-07**: **boomerang-v3 v0.5.4 RELEASED** — **Auth/embed fix**: install script was shipping a broken memini-ai config (Postgres user `user` instead of `postgres` → `password authentication failed for user "user"`) and 10/11 of memini's boolean feature flags were ignored because they used the `MEMINI_*`-prefixed name instead of the pydantic-settings canonical alias (e.g. `MEMINI_TRUST_ENGINE` → silently ignored; `TRUST_ENGINE` → applied). Also: provider `ollama` was missing `api: "openai"` and `apiKey` (Ollama Cloud would 401), and the bundled 10-model list was missing the 29 other Ollama Cloud models. **Fix**: (1) MCP_TEMPLATES['memini-ai-dev'] switched to canonical env-var names + correct `postgresql://postgres:password@…` + added LLM_*/DIALECTIC_LLM_*/MEMINI_PROJECT_ID/DB_SSLMODE/THOUGHT_CHAINS. (2) PROVIDERS['ollama-cloud'] got `api: "openai"` + `apiKey: <burn-OK Ollama key>` + 39 models. (3) Bundled `.opencode/opencode.json` synced to match working MCP-Servers config. **Python project was unblocked in-place** with the fixed config. 131/131 vitest pass, 0 typecheck errors, 0 lint errors.
 - **2026-05-21**: **boomerang-v3 v0.5.0 RELEASED** — Agent permission overhaul v0.5.0: replaced wildcard tool patterns with explicit allow-lists per agent role. Security improvements: boomerang-release local-only, boomerang-git gets remote GitHub MCP. ~57-73% token reduction per request.
 - **2026-05-20**: **boomerang-v3 v0.4.3 RELEASED** — Fixed critical env var mismatch for thought chains: `MEMINI_THOUGHT_CHAINS_ENABLED` → `THOUGHT_CHAINS`. The memini-ai server uses `alias="THOUGHT_CHAINS"` (not `MEMINI_THOUGHT_CHAINS_ENABLED`). Requires OpenCode restart to load the corrected config.
 - **2026-05-20**: **boomerang-v3 v0.4.2 RELEASED** — Removed deprecated `sequential-thinking` references from README, skills, and orchestrator SKILL.md. Added `MEMINI_THOUGHT_CHAINS_ENABLED: "true"` to root `opencode.json` (later corrected to `THOUGHT_CHAINS`).
