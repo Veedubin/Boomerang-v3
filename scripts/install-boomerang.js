@@ -39,24 +39,63 @@ const ICON = {
 
 // ─── Provider Presets ────────────────────────────────────────
 
+// Burn-OK Ollama Cloud API key. Safe to ship; rotate via OLLAMA_API_KEY env var if needed.
+// Source: /home/jcharles/Projects/MCP-Servers/.opencode/opencode.json
+const DEFAULT_OLLAMA_API_KEY = 'YOUR_OLLAMA_CLOUD_API_KEY';
+
 const PROVIDERS = {
   'ollama-cloud': {
     providerId: 'ollama',  // OpenCode provider key (matches root .opencode/opencode.json)
-    npm: '@ai-sdk/openai-compatible',
     name: 'Ollama Cloud',
-    options: { baseURL: 'https://ollama.com/v1' },
+    api: 'openai',
+    options: {
+      baseURL: 'https://ollama.com/v1',
+      apiKey: process.env.OLLAMA_API_KEY || DEFAULT_OLLAMA_API_KEY,
+    },
     needsProxy: false,  // 2026-05-27: Ollama Cloud does not enforce the advertised 3-slot limit; proxy is deprecated
     models: {
       'kimi-k2.6': { name: 'Kimi K2.6 (Cloud)' },
+      'minimax-m3': { name: 'minimax-m3 (Cloud)' },
       'glm-5.1': { name: 'GLM 5.1 (Cloud)' },
       'deepseek-v4-pro': { name: 'DeepSeek V4 Pro (Cloud)' },
-      'devstral-2:123b': { name: 'Devstral 2 (Cloud)' },
+      'devstral-2:123b': { name: 'Devstral 2 123B (Cloud)' },
       'deepseek-v4-flash': { name: 'DeepSeek V4 Flash (Cloud)' },
       'qwen3-coder-next': { name: 'Qwen3 Coder Next (Cloud)' },
       'minimax-m2.7': { name: 'MiniMax M2.7 (Cloud)' },
       'gemma4:31b': { name: 'Gemma 4 31B (Cloud)' },
       'qwen3.5': { name: 'Qwen 3.5 (Cloud)' },
-      'devstral-small-2:24b': { name: 'Devstral Small 2 (Cloud)' },
+      'devstral-small-2:24b': { name: 'Devstral Small 2 24B (Cloud)' },
+      'gemma3:4b': { name: 'Gemma 3 4B (Cloud)' },
+      'glm-4.6': { name: 'GLM 4.6 (Cloud)' },
+      'qwen3-vl:235b-instruct': { name: 'Qwen3 VL 235B Instruct (Cloud)' },
+      'qwen3-coder:480b': { name: 'Qwen3 Coder 480B (Cloud)' },
+      'deepseek-v3.2': { name: 'DeepSeek V3.2 (Cloud)' },
+      'deepseek-v3.1:671b': { name: 'DeepSeek V3.1 671B (Cloud)' },
+      'gemma3:12b': { name: 'Gemma 3 12B (Cloud)' },
+      'gemma3:27b': { name: 'Gemma 3 27B (Cloud)' },
+      'rnj-1:8b': { name: 'RNJ 1 8B (Cloud)' },
+      'glm-4.7': { name: 'GLM 4.7 (Cloud)' },
+      'qwen3-next:80b': { name: 'Qwen3 Next 80B (Cloud)' },
+      'kimi-k2.5': { name: 'Kimi K2.5 (Cloud)' },
+      'kimi-k2-thinking': { name: 'Kimi K2 Thinking (Cloud)' },
+      'mistral-large-3:675b': { name: 'Mistral Large 3 675B (Cloud)' },
+      'gemini-3-flash-preview': { name: 'Gemini 3 Flash Preview (Cloud)' },
+      'qwen3.5:397b': { name: 'Qwen 3.5 397B (Cloud)' },
+      'cogito-2.1:671b': { name: 'Cogito 2.1 671B (Cloud)' },
+      'gpt-oss:20b': { name: 'GPT-OSS 20B (Cloud)' },
+      'gpt-oss:120b': { name: 'GPT-OSS 120B (Cloud)' },
+      'minimax-m2.5': { name: 'MiniMax M2.5 (Cloud)' },
+      'minimax-m2.1': { name: 'MiniMax M2.1 (Cloud)' },
+      'minimax-m2': { name: 'MiniMax M2 (Cloud)' },
+      'nemotron-3-super': { name: 'Nemotron 3 Super (Cloud)' },
+      'nemotron-3-nano:30b': { name: 'Nemotron 3 Nano 30B (Cloud)' },
+      'glm-5': { name: 'GLM 5 (Cloud)' },
+      'ministral-3:3b': { name: 'Ministral 3 3B (Cloud)' },
+      'ministral-3:8b': { name: 'Ministral 3 8B (Cloud)' },
+      'ministral-3:14b': { name: 'Ministral 3 14B (Cloud)' },
+      'glm-5.2': { name: 'GLM 5.2 (Cloud)' },
+      'kimi-k2.7-code': { name: 'Kimi K2.7 Code (Cloud)' },
+      'nemotron-3-ultra': { name: 'Nemotron 3 Ultra (Cloud)' },
     },
   },
   openai: {
@@ -74,23 +113,39 @@ const PROVIDERS = {
 
 // ─── MCP Server Templates ────────────────────────────────────
 
+// memini-ai env vars use pydantic-settings `Field(alias=...)` for everything EXCEPT
+// MEMINI_DB_URL and MEMINI_EMBEDDING_DIM. The canonical names do NOT have a MEMINI_
+// prefix (e.g. `TRUST_ENGINE`, not `MEMINI_TRUST_ENGINE`). Previous versions of this
+// script used the MEMINI_-prefixed form, which pydantic silently ignored, so most
+// feature flags shipped in the OFF state. See memini-ai-dev/src/memini_ai/config.py
+// for the canonical alias list.
 const MCP_TEMPLATES = {
   'memini-ai-dev': {
     type: 'local',
-    command: ['uvx', '--from', 'memini-ai-dev', 'memini-ai', '--stdio'],
+    command: ['uv', 'run', '--directory', process.env.MEMINI_AI_DIR || '/home/jcharles/Projects/MCP-Servers/memini-ai-dev', 'memini-ai', '--stdio'],
     environment: {
-      MEMINI_DB_URL: process.env.MEMINI_DB_URL || 'postgresql://user:password@localhost:5434/postgres',
+      MEMINI_DB_URL: process.env.MEMINI_DB_URL || 'postgresql://postgres:password@localhost:5434/postgres',
       MEMINI_EMBEDDING_DIM: '384',
-      MEMINI_TRUST_ENGINE: 'true',
-      MEMINI_MEMORY_GRAPH: 'true',
-      MEMINI_KG_ENABLED: 'true',
-      MEMINI_TIERED_LOADING: 'true',
-      MEMINI_AUTO_EXTRACT: 'true',
-      MEMINI_PRECOMPRESS: 'true',
-      MEMINI_USER_MODELING: 'true',
-      MEMINI_DECAY_ENABLED: 'true',
-      MEMINI_MULTI_PEER_ENABLED: 'true',
-      MEMINI_DIALECTIC_ENABLED: 'true',
+      MEMINI_PROJECT_ID: process.env.MEMINI_PROJECT_ID || 'boomerang-v3-install',
+      DB_SSLMODE: 'disable',
+      TRUST_ENGINE: 'true',
+      MEMORY_GRAPH: 'true',
+      KG_ENABLED: 'true',
+      TIERED_LOADING: 'true',
+      AUTO_EXTRACT: 'true',
+      PRECOMPRESS: 'true',
+      USER_MODELING: 'true',
+      DECAY_ENABLED: 'true',
+      MULTI_PEER_ENABLED: 'true',
+      DIALECTIC_ENABLED: 'true',
+      THOUGHT_CHAINS: 'true',
+      LLM_PROVIDER: 'ollama-cloud',
+      LLM_BASE_URL: 'https://ollama.com/v1',
+      LLM_API_KEY: process.env.OLLAMA_API_KEY || DEFAULT_OLLAMA_API_KEY,
+      LLM_URL: 'https://ollama.com/v1',
+      LLM_MODEL: 'devstral-small-2:24b',
+      DIALECTIC_LLM_PROVIDER: 'ollama-cloud',
+      DIALECTIC_LLM_MODEL: 'devstral-small-2:24b',
     },
     timeout: 60000,
     enabled: true,
@@ -424,11 +479,14 @@ function mergeOpencodeConfig(existing, providerName, primary, secondary, exclude
   // 2. provider — deep merge by provider name
   result.provider = result.provider || {};
   const providerEntry = {
-    npm: provider.npm,
     name: provider.name,
     options: provider.options,
     models: { ...(provider.models) },
   };
+  // Only include `npm` for providers that ship a dedicated SDK package
+  if (provider.npm) providerEntry.npm = provider.npm;
+  // Only include `api` for providers that declare a non-default API style
+  if (provider.api) providerEntry.api = provider.api;
 
   // If --primary or --secondary, mark those specially
   if (primary) {
@@ -544,7 +602,7 @@ ${ANSI.bold}USAGE${ANSI.reset}
 ${ANSI.bold}OPTIONS${ANSI.reset}
   --provider <name>     Provider preset: ollama-cloud (default), openai
   --primary <model>     Primary model (e.g., kimi-k2.6)
-  --secondary <model>   Secondary model (e.g., glm-5.1)
+  --secondary <model>   Secondary model (e.g., glm-5.2)
   --exclude <list>      Comma-separated services to skip: memini-ai-dev
   --docker              Check Docker and print compose instructions
   --dry-run             Preview changes without writing files
