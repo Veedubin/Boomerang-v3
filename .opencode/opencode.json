@@ -135,5 +135,153 @@
         }
       }
     }
+  },
+  "mcp": {
+    "markitdown": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "markitdown-mcp"
+      ],
+      "enabled": false
+    },
+    "duckdb": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "mcp-server-motherduck",
+        "--db-path",
+        ":memory:",
+        "--read-write",
+        "--allow-switch-databases"
+      ],
+      "enabled": false
+    },
+    "redis": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@gongrzhe/server-redis-mcp",
+        "redis://localhost:6379"
+      ],
+      "enabled": false
+    },
+    "playwright": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@playwright/mcp@latest"
+      ],
+      "enabled": false
+    },
+    "calculator": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@wrtnlabs/calculator-mcp"
+      ],
+      "enabled": false
+    },
+    "prefect": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "--from",
+        "prefect-mcp",
+        "prefect-mcp-server"
+      ],
+      "enabled": false
+    },
+    "mlflow-mcp": {
+      "type": "local",
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "mlflow[mcp]>=3.5.1",
+        "mlflow",
+        "mcp",
+        "run"
+      ],
+      "environment": {
+        "MLFLOW_TRACKING_URI": "http://localhost:5001"
+      },
+      "enabled": false
+    },
+    "doc2png": {
+      "type": "local",
+      "command": [
+        "uv",
+        "run",
+        "doc2png"
+      ],
+      "enabled": false
+    },
+    "github-mcp": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "environment": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "{env:GITHUB_PERSONAL_ACCESS_TOKEN}"
+      },
+      "enabled": true
+    },
+    "memini-ai-dev": {
+      "type": "local",
+      "command": [
+        "uv",
+        "run",
+        "--directory",
+        "/home/jcharles/Projects/MCP-Servers/memini-ai-dev",
+        "memini-ai",
+        "--stdio"
+      ],
+      "environment": {
+        "MEMINI_DB_URL": "postgresql://postgres:password@localhost:5434/postgres",
+        "MEMINI_EMBEDDING_DIM": "384",
+        "TRUST_ENGINE": "true",
+        "MEMORY_GRAPH": "true",
+        "KG_ENABLED": "true",
+        "TIERED_LOADING": "true",
+        "AUTO_EXTRACT": "true",
+        "PRECOMPRESS": "true",
+        "USER_MODELING": "true",
+        "DECAY_ENABLED": "true",
+        "MULTI_PEER_ENABLED": "true",
+        "DIALECTIC_ENABLED": "true",
+        "THOUGHT_CHAINS": "true",
+        "DB_SSLMODE": "disable"
+      },
+      "timeout": 60000,
+      "enabled": true
+    },
+    "videre-mcp": {
+      "type": "local",
+      "command": [
+        "/home/jcharles/Projects/python/videre-mcp/.venv/bin/python",
+        "-m",
+        "videre_mcp"
+      ],
+      "enabled": true,
+      "timeout": 120000
+    },
+    "searxng": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "mcp-searxng"
+      ],
+      "environment": {
+        "SEARXNG_URL": "http://localhost:8080"
+      },
+      "enabled": true
+    }
   }
 }

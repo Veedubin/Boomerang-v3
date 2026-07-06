@@ -19,6 +19,25 @@ If you only want to swap which model each agent uses (and the model
 already exists in `provider.ollama.models`), the guide shows a `sed`
 one-liner that does it in seconds.
 
+## MCP Servers
+
+This project integrates 12 MCP servers for specialized tooling. The configuration was fixed this session to ensure all 12 servers are wired in.
+
+| Server | Purpose |
+|--------|---------|
+| memini-ai-dev | Python semantic memory + knowledge graph + tiered loading (PRIMARY) |
+| markitdown | Convert files (PDF/DOCX/HTML) to Markdown |
+| duckdb | In-memory SQL via DuckDB |
+| redis | Redis key-value access on localhost |
+| playwright | Browser automation / web scraping |
+| calculator | Math evaluation |
+| prefect | Prefect workflow orchestration |
+| mlflow-mcp | MLflow experiment tracking + model registry |
+| doc2png | Document to PNG rendering |
+| github-mcp | GitHub repo/issue/PR operations (needs GH_TOKEN) |
+| videre-mcp | Vision: screenshot, OCR, image description (Florence-2 / PaddleOCR) |
+| searxng | Web search via SearXNG metasearch |
+
 ## ⚡ CRITICAL: memini-ai Memory Protocol (MUST FOLLOW)
 
 All agents **MUST** interact with memini-ai at every step:
