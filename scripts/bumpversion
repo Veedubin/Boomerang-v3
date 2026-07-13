@@ -1,0 +1,993 @@
+#!/usr/bin/env python3
+"""bumpversion — multi-target version bumper.
+
+Increments the version in every version-tracking file for the current
+repo AND validates the version is consistent across all release targets
+that apply to this repo. Refuses to run if any target disagrees (drift
+detection).
+
+Release targets handled:
+  python  (PyPI)       — pyproject.toml [project] version  +  src/.../__version__.py
+  npm                   — package.json "version"
+  github (tag + release) — validates vX.Y.Z tag exists on origin and a
+                            GitHub release exists for the previous version
+                            (offline check via `git ls-remote --tags origin`)
+
+Repos known (auto-detected by inspecting pyproject.toml name / package.json name):
+  memini-ai-dev                : python  →  PyPI + GH release
+  boomerang-queue              : python  →  PyPI
+  boomerang-proxy              : python  →  PyPI
+  doc2png                      : python  →  PyPI
+  @veedubin/boomerang-v3       : npm     →  NPM + GH release
+  @veedubin/neuralgentics      : npm     →  NPM + GH release
+  @veedubin/super-memory-ts    : npm     →  NPM + GH release
+  @fangjunjie/ssh-mcp-server   : npm     →  NPM + GH release
+  attacklm-dataset             : python  →  GH release (no PyPI; data bundle)
+  attacklm                     : python  →  PyPI (Hatchling dynamic version)
+
+To add a new repo, append a RepoConfig entry. To add a new file to
+an existing repo, add a FileSpec to that repo's files list.
+
+Usage:
+  bumpversion                        # show current version + drift check
+  bumpversion --patch                # show what would change (dry-run)
+  bumpversion --minor --apply        # bump minor and write
+  bumpversion --major --apply        # bump major and write
+  bumpversion --check                # exit 1 if any target disagrees
+  bumpversion --list                 # show known files + targets for repo
+  bumpversion --repo /path/to/repo   # specify repo (default: cwd)
+  bumpversion --audit                # deep audit: compare local vs tag vs PyPI vs NPM
+  bumpversion --no-network          # skip PyPI/NPM API calls during --audit
+
+Safety:
+  - Refuses to run on a dirty git working tree
+  - Refuses to run if any known file is missing
+  - Refuses to bump if files disagree (drift detection)
+  - Default = dry-run; --apply required to write
+  - Prints a diff (old -> new) before writing
+  - --audit requires network only for the actual API calls (offline by default)
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import subprocess
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import NoReturn, Pattern
+
+# ---------------------------------------------------------------------------
+# Repo registry
+# ---------------------------------------------------------------------------
+#
+# Each repo has:
+#   name              : the pyproject.toml `name = "..."` or
+#                       package.json `"name": "..."` value (for autodetect)
+#   detect_marker     : substring that MUST be present in the matching
+#                       file to confirm this registry entry applies
+#                       (e.g. "memini-ai-dev" in package name, or
+#                        "name = "memini-ai-dev"" in pyproject.toml)
+#   canonical         : the relative path to the file that DEFINES the
+#                       version (also the FIRST file in the files list)
+#   files             : list[FileSpec] — all files to bump in lockstep
+#   release_targets   : set of {python, npm, github} — which targets apply
+#   pypi_name         : PyPI project name (only if "python" in targets)
+#   npm_name          : NPM package name (only if "npm" in targets)
+#   github_repo       : "owner/repo" (only if "github" in targets)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class FileSpec:
+    """How to find and replace the version in a single file."""
+
+    relpath: str
+    # Regex with one capture group for the X.Y.Z version string.
+    # The script replaces the captured group with the new version.
+    # Use re.MULTILINE so ^ and $ match per-line.
+    pattern: Pattern[str]
+    # Replacement template. {version} is substituted with the new
+    # version string. Default keeps surrounding context and inserts
+    # the new version in the same position.
+    replacement: str = r"\g<1>{version}\g<2>"
+
+
+@dataclass
+class RepoConfig:
+    name: str
+    canonical: str
+    files: list[FileSpec] = field(default_factory=list)
+    # Auto-detect: substring of pyproject.toml `name = "..."` or
+    # package.json `"name": "..."` value
+    name_match: str = ""
+    # Optional: path to a marker file that confirms this is the right repo
+    # (e.g. "memini-ai-dev/pyproject.toml" for the memini-ai-dev repo)
+    marker_file: str | None = None
+    # Optional: subdirectory of the workspace root where the repo lives.
+    # If set, when the user invokes bumpversion from the workspace root,
+    # all file paths in `files` are interpreted relative to this subdir.
+    # When invoked from inside that subdir, paths are used as-is.
+    subdir: str | None = None
+    # Release targets
+    pypi_name: str | None = None
+    npm_name: str | None = None
+    github_repo: str | None = None
+
+    @property
+    def release_targets(self) -> set[str]:
+        t: set[str] = set()
+        if self.pypi_name:
+            t.add("python")
+        if self.npm_name:
+            t.add("npm")
+        if self.github_repo:
+            t.add("github")
+        return t
+
+    def relpath_for(self, abs_cwd: Path) -> str:
+        """Return the path prefix-stripped to the repo root.
+
+        If a `subdir` is set AND the cwd equals the parent of that subdir,
+        the subdir prefix is removed from file paths. Otherwise paths are
+        used as-is (we're already inside the repo).
+        """
+        if self.subdir is None:
+            return ""  # no prefix to strip
+        # If cwd ends with subdir (i.e. we're inside it), no stripping needed
+        if abs_cwd.name == self.subdir:
+            return ""
+        # If cwd's parent contains subdir as a sibling, no stripping
+        # (we're in a different repo entirely)
+        if (abs_cwd / self.subdir).is_dir():
+            return ""  # cwd is the workspace root — paths are subdir/file
+        return ""
+
+    def abs_path(self, abs_cwd: Path, relpath: str) -> Path:
+        """Resolve a file relpath against the actual repo root."""
+        prefix = self.relpath_for(abs_cwd)
+        if prefix:
+            return abs_cwd / prefix / relpath
+        return abs_cwd / relpath
+
+
+# ---------------------------------------------------------------------------
+# File patterns
+# ---------------------------------------------------------------------------
+
+# Python: __version__ = "X.Y.Z"
+PY_VERSION_PY = re.compile(
+    r'^(__version__\s*=\s*")'  # group 1: prefix
+    r"(\d+\.\d+\.\d+)"  # group 2: version
+    r'(")',  # group 3: suffix
+    re.MULTILINE,
+)
+
+# Python: pyproject.toml [project] version = "X.Y.Z"
+PY_PYPROJECT = re.compile(
+    r'^(version\s*=\s*")'  # group 1: prefix
+    r"(\d+\.\d+\.\d+)"  # group 2: version
+    r'(")',  # group 3: suffix
+    re.MULTILINE,
+)
+
+# NPM: package.json "version": "X.Y.Z"
+NPM_PACKAGE_JSON = re.compile(
+    r'("version"\s*:\s*")'  # group 1: prefix
+    r"(\d+\.\d+\.\d+)"  # group 2: version
+    r'(")',  # group 3: suffix
+)
+
+
+# ---------------------------------------------------------------------------
+# Helper: build a RepoConfig from a small dict (less boilerplate below)
+# ---------------------------------------------------------------------------
+
+
+def _py(
+    name: str,
+    subdir: str,
+    canonical_file: str,
+    version_py_rel: str | None = None,
+    pyproject_rel: str = "pyproject.toml",
+    pypi_name: str | None = None,
+    github_repo: str | None = None,
+    marker_file: str | None = None,
+) -> RepoConfig:
+    """Build a Python-only repo config.
+
+    Args:
+        name: registry name (used for autodetect)
+        subdir: workspace-relative directory of the repo
+        canonical_file: file relpath to the canonical version source
+                       (relative to the repo root, e.g. 'pyproject.toml')
+        version_py_rel: file relpath to __version__.py, or None if
+                        the version is only in pyproject.toml
+        pyproject_rel: file relpath to pyproject.toml
+        pypi_name: PyPI project name (or None)
+        github_repo: GitHub owner/repo (or None)
+        marker_file: workspace-root-relative path to a unique marker file
+    """
+    files: list[FileSpec] = []
+    if version_py_rel is not None:
+        files.append(
+            FileSpec(
+                relpath=version_py_rel,
+                pattern=PY_VERSION_PY,
+                replacement=r"\g<1>{version}\g<3>",
+            )
+        )
+    files.append(
+        FileSpec(
+            relpath=pyproject_rel,
+            pattern=PY_PYPROJECT,
+            replacement=r"\g<1>{version}\g<3>",
+        )
+    )
+    return RepoConfig(
+        name=name,
+        canonical=canonical_file,
+        name_match=name,
+        marker_file=marker_file,
+        subdir=subdir,
+        pypi_name=pypi_name,
+        github_repo=github_repo,
+        files=files,
+    )
+
+
+def _npm(
+    name: str,
+    subdir: str,
+    canonical_file: str = "package.json",
+    npm_name: str | None = None,
+    github_repo: str | None = None,
+    marker_file: str | None = None,
+) -> RepoConfig:
+    """Build an NPM-only repo config."""
+    return RepoConfig(
+        name=name,
+        canonical=canonical_file,
+        name_match=name,
+        marker_file=marker_file,
+        subdir=subdir,
+        npm_name=npm_name,
+        github_repo=github_repo,
+        files=[
+            FileSpec(
+                relpath=canonical_file,
+                pattern=NPM_PACKAGE_JSON,
+                replacement=r"\g<1>{version}\g<3>",
+            ),
+        ],
+    )
+
+
+# ---------------------------------------------------------------------------
+# Registry
+# ---------------------------------------------------------------------------
+#
+# Order matters: the FIRST repo whose name matches gets selected.
+# The longer/more-specific names come first to avoid substring overlap
+# (e.g. "boomerang-v3" must match before "boomerang").
+# ---------------------------------------------------------------------------
+
+REPOS: list[RepoConfig] = [
+    # === Python repos (PyPI) ===
+    _py(
+        name="memini-ai-dev",
+        subdir="memini-ai-dev",
+        canonical_file="pyproject.toml",
+        version_py_rel=None,  # memini-ai-dev only tracks version in pyproject.toml
+        pyproject_rel="pyproject.toml",
+        pypi_name="memini-ai-dev",
+        github_repo="VeeDubin/memini-ai-dev",
+        marker_file="memini-ai-dev/pyproject.toml",
+    ),
+    _py(
+        name="boomerang-queue",
+        subdir="boomerang-queue",
+        canonical_file="pyproject.toml",
+        version_py_rel=None,
+        pyproject_rel="pyproject.toml",
+        pypi_name="boomerang-queue",
+        github_repo=None,
+        marker_file="boomerang-queue/pyproject.toml",
+    ),
+    _py(
+        name="boomerang-proxy",
+        subdir="boomerang-proxy",
+        canonical_file="pyproject.toml",
+        version_py_rel=None,
+        pyproject_rel="pyproject.toml",
+        pypi_name="boomerang-proxy",
+        github_repo=None,
+        marker_file="boomerang-proxy/pyproject.toml",
+    ),
+    _py(
+        name="doc2png",
+        subdir="doc2png",
+        canonical_file="pyproject.toml",
+        version_py_rel=None,
+        pyproject_rel="pyproject.toml",
+        pypi_name="doc2png",
+        github_repo=None,
+        marker_file="doc2png/pyproject.toml",
+    ),
+    # === NPM repos ===
+    _npm(
+        name="@veedubin/boomerang-v3",
+        subdir="boomerang-v3",
+        canonical_file="package.json",
+        npm_name="@veedubin/boomerang-v3",
+        github_repo="VeeDubin/Boomerang-v3",
+        marker_file="boomerang-v3/package.json",
+    ),
+    _npm(
+        name="@veedubin/neuralgentics",
+        subdir="neuralgentics",
+        canonical_file="package.json",
+        npm_name="@veedubin/neuralgentics",
+        github_repo="VeeDubin/neuralgentics",
+        marker_file="neuralgentics/package.json",
+    ),
+    # Fallback for the local @neuralgentics/root development name
+    _npm(
+        name="@neuralgentics/root",
+        subdir="neuralgentics",
+        canonical_file="package.json",
+        npm_name="@veedubin/neuralgentics",
+        github_repo="VeeDubin/neuralgentics",
+        marker_file="neuralgentics/package.json",
+    ),
+    _npm(
+        name="@veedubin/super-memory-ts",
+        subdir="Super-Memory-TS",
+        canonical_file="package.json",
+        npm_name="@veedubin/super-memory-ts",
+        github_repo="VeeDubin/Super-Memory-TS",
+        marker_file="Super-Memory-TS/package.json",
+    ),
+    _npm(
+        name="@fangjunjie/ssh-mcp-server",
+        subdir="ssh-mcp-server",
+        canonical_file="package.json",
+        npm_name="@fangjunjie/ssh-mcp-server",
+        github_repo="classfang/ssh-mcp-server",
+        marker_file="ssh-mcp-server/package.json",
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# Version helpers
+# ---------------------------------------------------------------------------
+
+VERSION_RE = re.compile(r"^\d+\.\d+\.\d+$")
+
+
+def parse_version(s: str) -> tuple[int, int, int]:
+    """Parse 'X.Y.Z' to (X, Y, Z). Raises ValueError on bad input."""
+    if not VERSION_RE.match(s):
+        raise ValueError(f"not a valid semver version: {s!r}")
+    return tuple(int(p) for p in s.split("."))  # type: ignore[return-value]
+
+
+def format_version(major: int, minor: int, patch: int) -> str:
+    return f"{major}.{minor}.{patch}"
+
+
+def bump(version: str, part: str) -> str:
+    """Apply a --patch / --minor / --major bump to a version string."""
+    major, minor, patch = parse_version(version)
+    if part == "patch":
+        return format_version(major, minor, patch + 1)
+    if part == "minor":
+        return format_version(major, minor + 1, 0)
+    if part == "major":
+        return format_version(major + 1, 0, 0)
+    raise ValueError(f"unknown part: {part!r}")
+
+
+# ---------------------------------------------------------------------------
+# Git helpers
+# ---------------------------------------------------------------------------
+
+
+def is_git_repo(cwd: Path) -> bool:
+    r = subprocess.run(
+        ["git", "rev-parse", "--git-dir"],
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+    )
+    return r.returncode == 0
+
+
+def is_clean_tree(cwd: Path) -> bool:
+    """Return True if `git status --porcelain` is empty."""
+    r = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+    )
+    return r.returncode == 0 and r.stdout.strip() == ""
+
+
+def get_remote_tags(cwd: Path, remote: str = "origin") -> set[str]:
+    """Return set of tag names (without 'v' prefix) on the remote."""
+    r = subprocess.run(
+        ["git", "ls-remote", "--tags", "--refs", remote],
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+    )
+    if r.returncode != 0:
+        return set()
+    tags: set[str] = set()
+    for line in r.stdout.splitlines():
+        # Format: <sha>\trefs/tags/vX.Y.Z
+        parts = line.split("\t")
+        if len(parts) != 2:
+            continue
+        ref = parts[1]
+        if not ref.startswith("refs/tags/"):
+            continue
+        name = ref[len("refs/tags/") :]
+        if name.startswith("v"):
+            name = name[1:]
+        if VERSION_RE.match(name):
+            tags.add(name)
+    return tags
+
+
+# ---------------------------------------------------------------------------
+# File operations
+# ---------------------------------------------------------------------------
+
+
+def read_version_from_file(path: Path, pattern: Pattern[str]) -> str | None:
+    """Extract X.Y.Z from path using pattern. Returns None if not found."""
+    if not path.exists():
+        return None
+    content = path.read_text(encoding="utf-8", errors="replace")
+    m = pattern.search(content)
+    if not m:
+        return None
+    return m.group(2)
+
+
+def apply_replacement(
+    path: Path, pattern: Pattern[str], new_version: str, replacement: str
+) -> tuple[bool, str]:
+    """Replace version in path. Returns (changed, new_content)."""
+    content = path.read_text(encoding="utf-8", errors="replace")
+    new_content = pattern.sub(replacement.format(version=new_version), content)
+    if new_content == content:
+        return False, content
+    return True, new_content
+
+
+# ---------------------------------------------------------------------------
+# Repo operations
+# ---------------------------------------------------------------------------
+
+
+def _read_name_from_pyproject(path: Path) -> str | None:
+    if not path.exists():
+        return None
+    m = re.search(
+        r'^name\s*=\s*"([^"]+)"',
+        path.read_text(encoding="utf-8", errors="replace"),
+        re.MULTILINE,
+    )
+    return m.group(1) if m else None
+
+
+def _read_name_from_package_json(path: Path) -> str | None:
+    if not path.exists():
+        return None
+    try:
+        pkg = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+    except json.JSONDecodeError:
+        return None
+    name = pkg.get("name")
+    return str(name) if name else None
+
+
+def _read_local_name(cwd: Path) -> tuple[str | None, str | None]:
+    """Read name from local pyproject.toml or package.json.
+    Returns (name, source) where source is 'pyproject' or 'package.json' or None."""
+    pyproject = cwd / "pyproject.toml"
+    package_json = cwd / "package.json"
+    if pyproject.exists():
+        n = _read_name_from_pyproject(pyproject)
+        if n:
+            return n, "pyproject.toml"
+    if package_json.exists():
+        n = _read_name_from_package_json(package_json)
+        if n:
+            return n, "package.json"
+    return None, None
+
+
+def detect_repo(cwd: Path) -> RepoConfig:
+    """Detect which known repo we're in.
+
+    Strategy:
+      1. If cwd contains a pyproject.toml or package.json whose `name`
+         matches a registry entry, use that entry. The repo's
+         `subdir` is the cwd's directory name (which equals `subdir`
+         in the registry when running from inside the repo).
+      2. Otherwise (running from the workspace root, e.g.
+         /home/jcharles/Projects/MCP-Servers), check `marker_file` for
+         each registry entry. marker_file is the path relative to
+         the workspace root (e.g. 'boomerang-v3/package.json').
+      3. If neither works, die.
+    """
+    # Strategy 1: local name match (running inside a repo)
+    local_name, _ = _read_local_name(cwd)
+    if local_name is not None:
+        matches = [r for r in REPOS if r.name_match and r.name_match in local_name]
+        if matches:
+            # Prefer the entry whose subdir matches our cwd's directory name
+            cwd_name = cwd.name
+            same_dir = [m for m in matches if m.subdir == cwd_name]
+            if same_dir:
+                return same_dir[0]
+            # Otherwise longest name_match wins
+            matches.sort(key=lambda r: len(r.name_match), reverse=True)
+            return matches[0]
+
+    # Strategy 2: workspace-root marker file match
+    for repo in REPOS:
+        if repo.marker_file and (cwd / repo.marker_file).exists():
+            return repo
+
+    # Strategy 3: directory-name fallback. If the cwd's directory
+    # name (or any ancestor's) matches a registry entry's subdir,
+    # use that. Handles renamed packages where the local package
+    # name no longer contains the registry's name_match.
+    cwd_resolved = cwd.resolve()
+    for ancestor in [cwd_resolved, *cwd_resolved.parents]:
+        for repo in REPOS:
+            if repo.subdir and ancestor.name == repo.subdir:
+                return repo
+
+    # Neither matched — give a clear error
+    if local_name is not None:
+        die(
+            f"unknown repo at {cwd}: package name={local_name!r} "
+            f"not in known repos: {[r.name for r in REPOS]}"
+        )
+    die(
+        f"no pyproject.toml or package.json found in {cwd} (and no "
+        f"workspace-root marker_file matched either)"
+    )
+
+
+def read_all_versions(cwd: Path, repo: RepoConfig) -> dict[str, str | None]:
+    """Read the version from every tracked file. None if file missing.
+
+    Returns paths as the user would expect (i.e. includes the subdir
+    prefix when running from the workspace root).
+    """
+    versions: dict[str, str | None] = {}
+    prefix = repo.relpath_for(cwd)
+    for f in repo.files:
+        display_path = f.relpath if not prefix else f"{prefix}/{f.relpath}"
+        path = repo.abs_path(cwd, f.relpath)
+        versions[display_path] = read_version_from_file(path, f.pattern)
+    return versions
+
+
+def check_drift(cwd: Path, repo: RepoConfig) -> tuple[bool, str | None, str | None]:
+    """Return (drifted, canonical_version, canonical_path).
+
+    The canonical version is the one in `repo.canonical` (the first
+    file in the files list). If any other file disagrees, drifted=True.
+    If the canonical file is missing, canonical_version is None.
+    """
+    versions = read_all_versions(cwd, repo)
+    prefix = repo.relpath_for(cwd)
+    canonical_key = repo.canonical if not prefix else f"{prefix}/{repo.canonical}"
+    canonical = versions[canonical_key]
+    if canonical is None:
+        return True, None, canonical_key
+    drifted = any(v != canonical for v in versions.values())
+    return drifted, canonical, canonical_key
+
+
+def write_version(cwd: Path, repo: RepoConfig, new_version: str) -> int:
+    """Write the new version to every tracked file. Returns count."""
+    written = 0
+    for f in repo.files:
+        path = repo.abs_path(cwd, f.relpath)
+        if not path.exists():
+            die(f"file missing: {f.relpath} (refusing to bump)")
+        changed, new_content = apply_replacement(
+            path, f.pattern, new_version, f.replacement
+        )
+        if not changed:
+            die(f"no replacement made in {f.relpath} — pattern didn't match")
+        path.write_text(new_content, encoding="utf-8")
+        written += 1
+    return written
+
+
+# ---------------------------------------------------------------------------
+# Network audit: compare local version vs latest published
+# ---------------------------------------------------------------------------
+
+
+def _http_get_json(url: str, timeout: float = 5.0) -> dict[str, object] | None:
+    try:
+        with urllib.request.urlopen(url, timeout=timeout) as resp:
+            data: object = json.loads(resp.read().decode("utf-8"))
+            if isinstance(data, dict):
+                return data
+            return None
+    except (urllib.error.URLError, json.JSONDecodeError, TimeoutError):
+        return None
+
+
+def get_latest_pypi_version(name: str) -> str | None:
+    """Fetch latest version from PyPI JSON API. Returns None on error/404."""
+    url = f"https://pypi.org/pypi/{urllib.parse.quote(name)}/json"
+    data = _http_get_json(url)
+    if not data:
+        return None
+    info = data.get("info")
+    if not isinstance(info, dict):
+        return None
+    version = info.get("version")
+    return str(version) if version is not None else None
+
+
+def get_latest_npm_version(name: str) -> str | None:
+    """Fetch latest version from NPM registry. Returns None on error/404."""
+    url = f"https://registry.npmjs.org/{urllib.parse.quote(name, safe='@')}/latest"
+    data = _http_get_json(url)
+    if not data:
+        return None
+    version = data.get("version")
+    return str(version) if version is not None else None
+
+
+def cmd_audit(cwd: Path, repo: RepoConfig, *, no_network: bool = False) -> int:
+    """Deep audit: compare local version vs git tag vs PyPI vs NPM."""
+    say(f"Repo: {repo.name}  (cwd: {cwd})")
+    versions = read_all_versions(cwd, repo)
+    canonical_key = next(iter(versions))
+    canonical: str | None = versions[canonical_key]
+
+    if canonical is None:
+        warn(f"canonical file missing: {repo.canonical}")
+        return 1
+
+    info(f"Local version ({canonical_key}): {canonical}")
+    for relpath, v in versions.items():
+        if relpath == canonical_key:
+            continue
+        if v is None:
+            warn(f"{relpath}: MISSING")
+            return 1
+        if v != canonical:
+            warn(f"{relpath}: says {v!r}, expected {canonical!r} (DRIFT)")
+            return 1
+        info(f"{relpath}: {v} (matches)")
+
+    # Git tag check
+    targets = repo.release_targets
+    latest: str | None
+    if "github" in targets:
+        tags = get_remote_tags(cwd)
+        if canonical in tags:
+            info(f"Git tag: v{canonical} ✓")
+        else:
+            # Not necessarily an error — the tag may not have been pushed
+            # yet (e.g. just bumped locally). But it IS something to flag.
+            latest_tags = sorted(tags, key=lambda v: parse_version(v), reverse=True)
+            latest_tag = latest_tags[0] if latest_tags else "(none)"
+            warn(
+                f"Git tag: v{canonical} NOT FOUND on origin "
+                f"(latest on origin: v{latest_tag})"
+            )
+
+    # PyPI check
+    if "python" in targets and not no_network and repo.pypi_name:
+        latest = get_latest_pypi_version(repo.pypi_name)
+        if latest is None:
+            warn(
+                f"PyPI: could not fetch latest for {repo.pypi_name} "
+                f"(network error or 404)"
+            )
+        elif latest == canonical:
+            info(f"PyPI ({repo.pypi_name}): {latest} ✓")
+        else:
+            warn(
+                f"PyPI ({repo.pypi_name}): latest is {latest!r}, "
+                f"local is {canonical!r} (DRIFT)"
+            )
+
+    # NPM check
+    if "npm" in targets and not no_network and repo.npm_name:
+        latest = get_latest_npm_version(repo.npm_name)
+        if latest is None:
+            warn(
+                f"NPM: could not fetch latest for {repo.npm_name} "
+                f"(network error or 404)"
+            )
+        elif latest == canonical:
+            info(f"NPM ({repo.npm_name}): {latest} ✓")
+        else:
+            warn(
+                f"NPM ({repo.npm_name}): latest is {latest!r}, "
+                f"local is {canonical!r} (DRIFT)"
+            )
+
+    say("Audit complete.")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Output helpers
+# ---------------------------------------------------------------------------
+
+
+def info(msg: str) -> None:
+    print(f"  {msg}")
+
+
+def say(msg: str) -> None:
+    print(msg)
+
+
+def die(msg: str) -> NoReturn:
+    """Print error and exit 1."""
+    print(f"ERROR: {msg}", file=sys.stderr)
+    sys.exit(1)
+
+
+def warn(msg: str) -> None:
+    print(f"WARNING: {msg}", file=sys.stderr)
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+
+def build_argparser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="bumpversion",
+        description=(
+            "Increment the version in every version-tracking file for the "
+            "current repo and validate consistency across release targets "
+            "(PyPI, NPM, GitHub). Default = dry-run; pass --apply to write."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=__doc__,
+    )
+    group = p.add_mutually_exclusive_group()
+    group.add_argument(
+        "--patch",
+        action="store_true",
+        help="Bump patch (X.Y.Z -> X.Y.Z+1). Default if no part specified.",
+    )
+    group.add_argument(
+        "--minor",
+        action="store_true",
+        help="Bump minor (X.Y.Z -> X.Y+1.0).",
+    )
+    group.add_argument(
+        "--major",
+        action="store_true",
+        help="Bump major (X.Y.Z -> X+1.0.0).",
+    )
+    p.add_argument(
+        "--apply",
+        action="store_true",
+        help="Actually write the new version (default: dry-run).",
+    )
+    p.add_argument(
+        "--check",
+        action="store_true",
+        help="Drift-check only. Exit 0 if all files agree, 1 otherwise.",
+    )
+    p.add_argument(
+        "--list",
+        action="store_true",
+        help="List known files + release targets for the current repo and exit.",
+    )
+    p.add_argument(
+        "--audit",
+        action="store_true",
+        help="Deep audit: compare local vs tag vs PyPI vs NPM. "
+        "Uses network for PyPI/NPM unless --no-network is set.",
+    )
+    p.add_argument(
+        "--no-network",
+        action="store_true",
+        help="Skip PyPI/NPM API calls during --audit (offline mode).",
+    )
+    p.add_argument(
+        "--repo",
+        metavar="PATH",
+        default=None,
+        help="Path to repo root (default: current working directory).",
+    )
+    p.add_argument(
+        "--force-dirty",
+        action="store_true",
+        help="Bump even with uncommitted changes. Off by default.",
+    )
+    p.add_argument(
+        "--force-drift",
+        action="store_true",
+        help="Bump even if files disagree. Off by default. Sets all files "
+        "to the new version (loses any pre-existing drift).",
+    )
+    return p
+
+
+def cmd_list(cwd: Path, repo: RepoConfig) -> int:
+    say(f"Repo: {repo.name} (detected from {cwd})")
+    say("Known version-tracking files:")
+    prefix = repo.relpath_for(cwd)
+    for f in repo.files:
+        path = repo.abs_path(cwd, f.relpath)
+        display = f.relpath if not prefix else f"{prefix}/{f.relpath}"
+        status = "present" if path.exists() else "MISSING"
+        info(f"  {display}  [{status}]")
+    say("Release targets:")
+    targets = repo.release_targets
+    info(f"  python (PyPI={repo.pypi_name}): {'on' if 'python' in targets else 'off'}")
+    info(f"  npm (NPM={repo.npm_name}): {'on' if 'npm' in targets else 'off'}")
+    info(
+        f"  github (repo={repo.github_repo}): {'on' if 'github' in targets else 'off'}"
+    )
+    return 0
+
+
+def cmd_check(cwd: Path, repo: RepoConfig) -> int:
+    say(f"Repo: {repo.name}")
+    versions = read_all_versions(cwd, repo)
+    canonical_key = next(iter(versions))
+    canonical = versions[canonical_key]
+    if canonical is None:
+        warn(f"canonical file missing: {canonical_key}")
+        return 1
+    info(f"canonical version ({canonical_key}): {canonical}")
+    for relpath, v in versions.items():
+        if relpath == canonical_key:
+            continue
+        if v is None:
+            warn(f"{relpath}: MISSING")
+            return 1
+        if v != canonical:
+            warn(f"{relpath}: says {v!r}, expected {canonical!r}")
+            return 1
+        info(f"{relpath}: {v} (matches)")
+    say("OK: all files agree.")
+    return 0
+
+
+def cmd_bump(args: argparse.Namespace) -> int:
+    cwd = Path(args.repo or ".").resolve()
+    git_ok = is_git_repo(cwd)
+    if not git_ok:
+        # For --list / --check / --audit we don't strictly need git.
+        # For the actual bump, we'll warn but proceed.
+        warn(f"not a git repo: {cwd} (skipping dirty-tree check)")
+    repo = detect_repo(cwd)
+
+    if args.list:
+        return cmd_list(cwd, repo)
+
+    if args.audit:
+        return cmd_audit(cwd, repo, no_network=args.no_network)
+
+    if args.check:
+        return cmd_check(cwd, repo)
+
+    # --- Determine the bump part ---
+    if args.patch:
+        part = "patch"
+    elif args.minor:
+        part = "minor"
+    elif args.major:
+        part = "major"
+    else:
+        part = "patch"  # default
+
+    # --- Safety checks ---
+    if git_ok and not args.force_dirty and not is_clean_tree(cwd):
+        die(
+            f"working tree at {cwd} is not clean. "
+            f"Commit or stash changes first, or pass --force-dirty."
+        )
+
+    drifted, canonical, canonical_key = check_drift(cwd, repo)
+    if canonical is None:
+        die(
+            f"canonical file {canonical_key} is missing or unparseable. "
+            f"Fix the file and try again."
+        )
+    if drifted:
+        if not args.force_drift:
+            die(
+                f"version files disagree (canonical says {canonical}). "
+                f"Fix drift first with --check, or pass --force-drift to "
+                f"force all files to the new version."
+            )
+        warn(
+            f"--force-drift: setting all files to {canonical} + bump "
+            f"regardless of pre-existing drift"
+        )
+
+    # --- Compute the new version ---
+    new_version = bump(canonical, part)
+
+    # --- Print the plan ---
+    say(f"Repo: {repo.name}  (cwd: {cwd})")
+    say(f"Bump type: --{part}")
+    say(f"Current version: {canonical}")
+    say(f"New version:     {new_version}")
+    say("Files to update:")
+    prefix = repo.relpath_for(cwd)
+    for f in repo.files:
+        path = repo.abs_path(cwd, f.relpath)
+        if not path.exists():
+            die(f"file missing: {f.relpath}")
+        v = read_version_from_file(path, f.pattern)
+        display = f.relpath if not prefix else f"{prefix}/{f.relpath}"
+        info(f"  {display}: {v} -> {new_version}")
+
+    targets = repo.release_targets
+    if targets:
+        say("After commit + tag, the following will publish:")
+        if "python" in targets:
+            info(
+                f"  PyPI: {repo.pypi_name}@{new_version} (via .github/workflows/* on tag push)"
+            )
+        if "npm" in targets:
+            info(
+                f"  NPM: {repo.npm_name}@{new_version} (via .github/workflows/* on tag push)"
+            )
+        if "github" in targets:
+            info(f"  GitHub release: v{new_version} on {repo.github_repo}")
+
+    if not args.apply:
+        say("")
+        say("DRY RUN: pass --apply to write these changes.")
+        return 0
+
+    # --- Apply ---
+    written = write_version(cwd, repo, new_version)
+    say("")
+    say(f"Wrote {written} file(s). New version: {new_version}")
+    say("Next steps:")
+    info("git diff                          # review the changes")
+    info(f"git add -A && git commit -m 'chore(release): bump to {new_version}'")
+    info(f"git tag -a v{new_version} -m 'v{new_version}: <description>'")
+    info(f"git push origin main v{new_version}")
+    if targets:
+        info("# CI will auto-publish to PyPI/NPM and create the GitHub release.")
+        info("# Verify with: bumpversion --audit")
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_argparser().parse_args(argv)
+    return cmd_bump(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

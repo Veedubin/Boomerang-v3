@@ -2,7 +2,7 @@
 description: Boomerang Agent Builder v3 - Builds new skills and sub-agents from detected patterns with memini-ai.
 mode: subagent
 model: ollama/glm-5.2
-steps: 50
+steps: 500
 permission:
   read:
     '*': allow

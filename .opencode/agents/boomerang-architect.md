@@ -2,7 +2,7 @@
 description: Boomerang Architect v3 - Design decisions and architecture review with memini-ai knowledge graph.
 mode: subagent
 model: ollama/deepseek-v4-pro
-steps: 50
+steps: 500
 permission:
   read:
     '*': allow

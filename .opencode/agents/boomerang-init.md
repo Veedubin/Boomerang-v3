@@ -2,7 +2,7 @@
 description: Boomerang Init v3 - Project initialization with memini-ai for project context.
 mode: subagent
 model: ollama/kimi-k2.6
-steps: 40
+steps: 400
 permission:
   read:
     '*': allow

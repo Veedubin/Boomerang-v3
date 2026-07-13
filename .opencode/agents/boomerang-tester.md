@@ -2,7 +2,7 @@
 description: Boomerang Tester v3 - Testing specialist with memini-ai for test history.
 mode: subagent
 model: ollama/deepseek-v4-flash
-steps: 50
+steps: 500
 permission:
   read:
     '*': allow

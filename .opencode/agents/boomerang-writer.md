@@ -2,7 +2,7 @@
 description: Boomerang Writer v3 - Documentation specialist with memini-ai for context.
 mode: subagent
 model: ollama/mistral-large-3:675b
-steps: 40
+steps: 400
 permission:
   read:
     '*': allow

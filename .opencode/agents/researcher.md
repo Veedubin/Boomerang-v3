@@ -2,7 +2,7 @@
 description: Researcher v3 - Web research specialist with searxng and memini-ai.
 mode: subagent
 model: ollama/kimi-k2.6
-steps: 50
+steps: 500
 permission:
   read:
     '*': allow

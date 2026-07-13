@@ -2,7 +2,7 @@
 description: Boomerang Handoff v3 - Session wrap-up with memini-ai for context preservation.
 mode: subagent
 model: ollama/kimi-k2.6
-steps: 40
+steps: 400
 permission:
   read:
     '*': allow

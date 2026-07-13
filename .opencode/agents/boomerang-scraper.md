@@ -2,7 +2,7 @@
 description: Boomerang Scraper v3 - Web research specialist.
 mode: subagent
 model: ollama/qwen3.5
-steps: 40
+steps: 400
 permission:
   read:
     '*': allow
