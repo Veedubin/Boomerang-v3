@@ -663,7 +663,20 @@ describe('mergeAgentsMd', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 8. End-to-end CLI smoke test  (1 test)
+// 8. CLI mode flags
+// ---------------------------------------------------------------------------
+
+describe('CLI mode flags', () => {
+  it('parseFlags recognizes --init and --upgrade', () => {
+    if (!installScript) return;
+    expect(installScript.parseFlags(['--init'])).toMatchObject({ init: true, upgrade: false });
+    expect(installScript.parseFlags(['--upgrade'])).toMatchObject({ init: false, upgrade: true });
+    expect(installScript.parseFlags([])).toMatchObject({ init: false, upgrade: false });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 9. End-to-end CLI smoke test  (1 test)
 // ---------------------------------------------------------------------------
 
 describe('CLI smoke test', () => {
@@ -677,6 +690,28 @@ describe('CLI smoke test', () => {
 
     // Dry run should not fail
     const result = execSync(`node "${scriptPath}" --dry-run --yes`, {
+      encoding: 'utf8',
+      timeout: 10000,
+    });
+    expect(result).toBeDefined();
+  });
+
+  it('runs --init --dry-run --yes without error', () => {
+    const scriptPath = new URL('../scripts/install-boomerang.js', import.meta.url).pathname;
+    if (!existsSync(scriptPath)) return;
+
+    const result = execSync(`node "${scriptPath}" --init --dry-run --yes`, {
+      encoding: 'utf8',
+      timeout: 10000,
+    });
+    expect(result).toBeDefined();
+  });
+
+  it('runs --upgrade --dry-run --yes without error', () => {
+    const scriptPath = new URL('../scripts/install-boomerang.js', import.meta.url).pathname;
+    if (!existsSync(scriptPath)) return;
+
+    const result = execSync(`node "${scriptPath}" --upgrade --dry-run --yes`, {
       encoding: 'utf8',
       timeout: 10000,
     });

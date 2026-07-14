@@ -9,8 +9,8 @@
  * Exit codes: 0 = success, 1 = error, 2 = cancelled
  */
 
-import { readFile, writeFile, mkdir, readdir, stat, rename } from 'node:fs/promises';
-import { join, dirname } from 'node:path';
+import { readFile, writeFile, mkdir, readdir, stat, rename, rm } from 'node:fs/promises';
+import { join, dirname, relative } from 'node:path';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline/promises';
@@ -272,6 +272,8 @@ function parseFlags(argv, cwd) {
     target: undefined,
     source: undefined,
     help: false,
+    init: false,
+    upgrade: false,
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -304,6 +306,12 @@ function parseFlags(argv, cwd) {
         break;
       case '--source':
         flags.source = argv[++i];
+        break;
+      case '--init':
+        flags.init = true;
+        break;
+      case '--upgrade':
+        flags.upgrade = true;
         break;
       case '--help':
       case '-h':
@@ -374,10 +382,24 @@ function logInfo(msg) { console.log(`${ICON.info} ${ANSI.cyan}${msg}${ANSI.reset
 // ─── File Operations (idempotent) ───────────────────────────
 
 /**
+ * Back up a file to a timestamped directory.
+ * @param {string} filePath - File to back up
+ * @param {string} backupDir - Root backup directory
+ * @param {string} relPath - Relative path inside the backup directory
+ * @returns {Promise<string>} Full backup path
+ */
+async function backupFile(filePath, backupDir, relPath) {
+  const backupPath = join(backupDir, relPath);
+  await mkdir(dirname(backupPath), { recursive: true });
+  await rename(filePath, backupPath);
+  return backupPath;
+}
+
+/**
  * Copy a file with SHA-256 idempotency check.
  * @returns {'CREATED'|'SKIPPED'|'UPDATED'}
  */
-async function copyFileIdempotent(src, dest, dryRun) {
+async function copyFileIdempotent(src, dest, dryRun, backupDir) {
   const srcContent = await readFile(src, 'utf-8');
   const srcHash = _sha256Sync(srcContent);
 
@@ -386,13 +408,17 @@ async function copyFileIdempotent(src, dest, dryRun) {
     const destHash = _sha256Sync(destContent);
 
     if (srcHash === destHash) {
-      if (!dryRun) { /* nothing */ }
       return 'SKIPPED';
     }
 
     // Different content → backup then overwrite
     if (!dryRun) {
-      await rename(dest, dest + '.bak');
+      if (backupDir) {
+        const rel = relative(dirname(dest), dest) || basename(dest);
+        await backupFile(dest, backupDir, rel);
+      } else {
+        await rename(dest, dest + '.bak');
+      }
       await writeFile(dest, srcContent, 'utf-8');
     }
     return 'UPDATED';
@@ -404,6 +430,14 @@ async function copyFileIdempotent(src, dest, dryRun) {
     await writeFile(dest, srcContent, 'utf-8');
   }
   return 'CREATED';
+}
+
+/**
+ * Format a UTC timestamp safe for directory names.
+ * @returns {string}
+ */
+function formatBackupTimestamp(date = new Date()) {
+  return date.toISOString().replace(/[:.]/g, '-');
 }
 
 // ─── AGENTS.md Merge ────────────────────────────────────────
@@ -659,13 +693,17 @@ async function main() {
   }
   logInfo(`Provider: ${providerName}`);
 
+  // ── Choose mode ──
+  const mode = flags.upgrade ? 'upgrade' : 'init';
+
   // ── Confirm (unless --yes or --dry-run) ──
   if (!flags.yes && !flags['dry-run']) {
     const rl = createInterface({ input: process.stdin, output: process.stdout });
-    const answer = await rl.question(`\nInstall boomerang-v3 to ${targetDir}? [y/N] `);
+    const verb = mode === 'upgrade' ? 'Upgrade' : 'Install';
+    const answer = await rl.question(`\n${verb} boomerang-v3 in ${targetDir}? [y/N] `);
     rl.close();
     if (answer.toLowerCase() !== 'y' && answer.toLowerCase() !== 'yes') {
-      logWarn('Installation cancelled.');
+      logWarn(`${verb} cancelled.`);
       process.exit(2);
     }
   }
@@ -674,21 +712,104 @@ async function main() {
     logInfo(`${ANSI.bold}DRY RUN MODE${ANSI.reset} — no files will be written.\n`);
   }
 
-  // ── Summary tracking ──
-  const summary = {
+  // ── Run the selected mode ──
+  let summary;
+  if (mode === 'upgrade') {
+    summary = await runUpgrade(sourceDir, targetDir, providerName, flags);
+  } else {
+    summary = await runInit(sourceDir, targetDir, providerName, flags);
+  }
+
+  // ── Docker check (Phase 1 — informational only) ──
+  if (flags.docker) {
+    logInfo('Checking Docker...');
+    const dockerAvailable = await dockerCheck();
+    if (dockerAvailable) {
+      printDockerInstructions();
+    }
+  }
+
+  // ── Print Summary ──
+  printSummary(summary, flags, mode);
+
+  process.exit(summary.errors.length > 0 ? 1 : 0);
+}
+
+/**
+ * Run a fresh init (default) install.
+ */
+async function runInit(sourceDir, targetDir, providerName, flags) {
+  const summary = emptySummary();
+
+  const agentsSrcDir = join(sourceDir, '.opencode', 'agents');
+  const agentsDestDir = join(targetDir, '.opencode', 'agents');
+  const skillsSrcDir = join(sourceDir, '.opencode', 'skills');
+  const skillsDestDir = join(targetDir, '.opencode', 'skills');
+  const agentsMdSrc = join(sourceDir, 'AGENTS.md');
+  const agentsMdDest = join(targetDir, 'AGENTS.md');
+  const opencodeJsonDest = join(targetDir, '.opencode', 'opencode.json');
+
+  await installAgents(agentsSrcDir, agentsDestDir, flags['dry-run'], summary);
+  await installSkills(skillsSrcDir, skillsDestDir, flags['dry-run'], summary);
+  await installAgentsMdInit(agentsMdSrc, agentsMdDest, flags['dry-run'], summary);
+  await installOpencodeJsonInit(opencodeJsonDest, providerName, flags, summary);
+
+  const verificationPassed = await verifyInstall(agentsDestDir, skillsDestDir, opencodeJsonDest, summary, flags);
+  summary.verificationPassed = verificationPassed;
+
+  return summary;
+}
+
+/**
+ * Run an upgrade: idempotent hash checks, timestamped backups, replace strategy for AGENTS.md.
+ */
+async function runUpgrade(sourceDir, targetDir, providerName, flags) {
+  const summary = emptySummary();
+  const backupTimestamp = formatBackupTimestamp();
+  const backupDir = join(targetDir, '.opencode', '.boomerang-backup', backupTimestamp);
+  summary.backupDir = backupDir;
+
+  const agentsSrcDir = join(sourceDir, '.opencode', 'agents');
+  const agentsDestDir = join(targetDir, '.opencode', 'agents');
+  const skillsSrcDir = join(sourceDir, '.opencode', 'skills');
+  const skillsDestDir = join(targetDir, '.opencode', 'skills');
+  const agentsMdSrc = join(sourceDir, 'AGENTS.md');
+  const agentsMdDest = join(targetDir, 'AGENTS.md');
+  const opencodeJsonDest = join(targetDir, '.opencode', 'opencode.json');
+
+  await upgradeAgents(agentsSrcDir, agentsDestDir, flags['dry-run'], summary, backupDir);
+  await upgradeSkills(skillsSrcDir, skillsDestDir, flags['dry-run'], summary, backupDir);
+  await upgradeAgentsMd(agentsMdSrc, agentsMdDest, flags['dry-run'], summary, backupDir);
+  await upgradeOpencodeJson(opencodeJsonDest, providerName, flags, summary, backupDir);
+
+  // Upgrades do not verify counts; just validate JSON
+  if (existsSync(opencodeJsonDest) && !flags['dry-run']) {
+    try {
+      const raw = await readFile(opencodeJsonDest, 'utf-8');
+      JSON.parse(raw);
+      logOk('opencode.json: valid JSON');
+    } catch (e) {
+      summary.errors.push(`opencode.json: INVALID JSON — ${e.message}`);
+      logErr(`opencode.json: INVALID JSON — ${e.message}`);
+    }
+  }
+
+  return summary;
+}
+
+function emptySummary() {
+  return {
     agents: { created: 0, skipped: 0, updated: 0, total: 0 },
     skills: { created: 0, skipped: 0, updated: 0, total: 0 },
     agentsMd: '',
     opencodeJson: '',
     errors: [],
+    verificationPassed: true,
+    backupDir: undefined,
   };
+}
 
-  // ═══════════════════════════════════════════════════════════
-  // STEP 1: Copy agent files
-  // ═══════════════════════════════════════════════════════════
-  const agentsSrcDir = join(sourceDir, '.opencode', 'agents');
-  const agentsDestDir = join(targetDir, '.opencode', 'agents');
-
+async function installAgents(agentsSrcDir, agentsDestDir, dryRun, summary) {
   logInfo('Installing agent files...');
   try {
     const agentFiles = await readdir(agentsSrcDir);
@@ -699,9 +820,9 @@ async function main() {
       const src = join(agentsSrcDir, file);
       const dest = join(agentsDestDir, file);
       try {
-        const result = await copyFileIdempotent(src, dest, flags['dry-run']);
+        const result = await copyFileIdempotent(src, dest, dryRun);
         summary.agents[result.toLowerCase()]++;
-        if (flags['dry-run']) {
+        if (dryRun) {
           console.log(`  ${result === 'CREATED' ? ICON.info : result === 'SKIPPED' ? ICON.ok : ICON.warn} [DRY] ${file}: ${result}`);
         } else {
           logOk(`Agent ${file}: ${result}`);
@@ -715,13 +836,38 @@ async function main() {
     summary.errors.push(`Agents directory: ${e.message}`);
     logErr(`Cannot read agents directory: ${e.message}`);
   }
+}
 
-  // ═══════════════════════════════════════════════════════════
-  // STEP 2: Copy skill directories
-  // ═══════════════════════════════════════════════════════════
-  const skillsSrcDir = join(sourceDir, '.opencode', 'skills');
-  const skillsDestDir = join(targetDir, '.opencode', 'skills');
+async function upgradeAgents(agentsSrcDir, agentsDestDir, dryRun, summary, backupDir) {
+  logInfo('Upgrading agent files...');
+  try {
+    const agentFiles = await readdir(agentsSrcDir);
+    const mdFiles = agentFiles.filter(f => f.endsWith('.md'));
+    summary.agents.total = mdFiles.length;
 
+    for (const file of mdFiles) {
+      const src = join(agentsSrcDir, file);
+      const dest = join(agentsDestDir, file);
+      try {
+        const result = await copyFileIdempotent(src, dest, dryRun, backupDir);
+        summary.agents[result.toLowerCase()]++;
+        if (dryRun) {
+          console.log(`  ${result === 'CREATED' ? ICON.info : result === 'SKIPPED' ? ICON.ok : ICON.warn} [DRY] ${file}: ${result}`);
+        } else {
+          logOk(`Agent ${file}: ${result}`);
+        }
+      } catch (e) {
+        summary.errors.push(`Agent ${file}: ${e.message}`);
+        logErr(`Failed to upgrade agent ${file}: ${e.message}`);
+      }
+    }
+  } catch (e) {
+    summary.errors.push(`Agents directory: ${e.message}`);
+    logErr(`Cannot read agents directory: ${e.message}`);
+  }
+}
+
+async function installSkills(skillsSrcDir, skillsDestDir, dryRun, summary) {
   logInfo('Installing skill files...');
   try {
     const skillDirs = await readdir(skillsSrcDir);
@@ -740,9 +886,9 @@ async function main() {
       const skillFileDest = join(skillsDestDir, skillDir, 'SKILL.md');
 
       try {
-        const result = await copyFileIdempotent(skillFileSrc, skillFileDest, flags['dry-run']);
+        const result = await copyFileIdempotent(skillFileSrc, skillFileDest, dryRun);
         summary.skills[result.toLowerCase()]++;
-        if (flags['dry-run']) {
+        if (dryRun) {
           console.log(`  ${result === 'CREATED' ? ICON.info : result === 'SKIPPED' ? ICON.ok : ICON.warn} [DRY] ${skillDir}/SKILL.md: ${result}`);
         } else {
           logOk(`Skill ${skillDir}/SKILL.md: ${result}`);
@@ -757,19 +903,63 @@ async function main() {
     summary.errors.push(`Skills directory: ${e.message}`);
     logErr(`Cannot read skills directory: ${e.message}`);
   }
+}
 
-  // ═══════════════════════════════════════════════════════════
-  // STEP 3: Merge AGENTS.md
-  // ═══════════════════════════════════════════════════════════
-  const agentsMdSrc = join(sourceDir, 'AGENTS.md');
-  const agentsMdDest = join(targetDir, 'AGENTS.md');
+async function upgradeSkills(skillsSrcDir, skillsDestDir, dryRun, summary, backupDir) {
+  logInfo('Upgrading skill files...');
+  try {
+    const skillDirs = await readdir(skillsSrcDir);
+    let skillCount = 0;
 
+    for (const skillDir of skillDirs) {
+      const skillSrcPath = join(skillsSrcDir, skillDir);
+      const skillStat = await stat(skillSrcPath);
+
+      if (!skillStat.isDirectory()) continue;
+
+      const skillFileSrc = join(skillSrcPath, 'SKILL.md');
+      if (!existsSync(skillFileSrc)) continue;
+
+      skillCount++;
+      const skillFileDest = join(skillsDestDir, skillDir, 'SKILL.md');
+
+      try {
+        const result = await copyFileIdempotent(skillFileSrc, skillFileDest, dryRun, backupDir);
+        summary.skills[result.toLowerCase()]++;
+        if (dryRun) {
+          console.log(`  ${result === 'CREATED' ? ICON.info : result === 'SKIPPED' ? ICON.ok : ICON.warn} [DRY] ${skillDir}/SKILL.md: ${result}`);
+        } else {
+          logOk(`Skill ${skillDir}/SKILL.md: ${result}`);
+        }
+      } catch (e) {
+        summary.errors.push(`Skill ${skillDir}: ${e.message}`);
+        logErr(`Failed to upgrade skill ${skillDir}: ${e.message}`);
+      }
+    }
+    summary.skills.total = skillCount;
+  } catch (e) {
+    summary.errors.push(`Skills directory: ${e.message}`);
+    logErr(`Cannot read skills directory: ${e.message}`);
+  }
+}
+
+async function installAgentsMdInit(agentsMdSrc, agentsMdDest, dryRun, summary) {
   logInfo('Installing AGENTS.md...');
   try {
     if (existsSync(agentsMdSrc)) {
-      await mergeAgentsMd(agentsMdDest, agentsMdSrc);
-      summary.agentsMd = 'OK';
-      logOk('AGENTS.md: updated');
+      if (dryRun) {
+        if (existsSync(agentsMdDest)) {
+          summary.agentsMd = 'PRESENT';
+          logOk('AGENTS.md: PRESENT (dry run)');
+        } else {
+          summary.agentsMd = 'CREATED';
+          logOk('AGENTS.md: CREATED (dry run)');
+        }
+      } else {
+        await mergeAgentsMd(agentsMdDest, agentsMdSrc);
+        summary.agentsMd = 'OK';
+        logOk('AGENTS.md: updated');
+      }
     } else {
       logWarn('Source AGENTS.md not found, skipping.');
     }
@@ -777,26 +967,62 @@ async function main() {
     summary.errors.push(`AGENTS.md: ${e.message}`);
     logErr(`Failed to process AGENTS.md: ${e.message}`);
   }
+}
 
-  // ═══════════════════════════════════════════════════════════
-  // STEP 4: Deep-merge opencode.json
-  // ═══════════════════════════════════════════════════════════
-  const opencodeJsonDest = join(targetDir, '.opencode', 'opencode.json');
+async function upgradeAgentsMd(agentsMdSrc, agentsMdDest, dryRun, summary, backupDir) {
+  logInfo('Upgrading AGENTS.md...');
+  try {
+    if (!existsSync(agentsMdSrc)) {
+      logWarn('Source AGENTS.md not found, skipping.');
+      return;
+    }
 
+    const srcContent = await readFile(agentsMdSrc, 'utf-8');
+    const srcHash = _sha256Sync(srcContent);
+
+    if (!existsSync(agentsMdDest)) {
+      if (!dryRun) {
+        await mkdir(dirname(agentsMdDest), { recursive: true });
+        await writeFile(agentsMdDest, srcContent, 'utf-8');
+      }
+      summary.agentsMd = 'CREATED';
+      logOk('AGENTS.md: CREATED');
+      return;
+    }
+
+    const destContent = await readFile(agentsMdDest, 'utf-8');
+    const destHash = _sha256Sync(destContent);
+
+    if (destHash === srcHash) {
+      summary.agentsMd = 'SKIPPED';
+      logOk('AGENTS.md: SKIPPED (identical)');
+      return;
+    }
+
+    if (!dryRun) {
+      await backupFile(agentsMdDest, backupDir, 'AGENTS.md');
+      await writeFile(agentsMdDest, srcContent, 'utf-8');
+    }
+    summary.agentsMd = 'UPDATED';
+    logOk('AGENTS.md: UPDATED');
+  } catch (e) {
+    summary.errors.push(`AGENTS.md: ${e.message}`);
+    logErr(`Failed to process AGENTS.md: ${e.message}`);
+  }
+}
+
+async function installOpencodeJsonInit(opencodeJsonDest, providerName, flags, summary) {
   logInfo('Merging opencode.json...');
   try {
-    // Read existing opencode.json (if any)
     let existing = {};
     if (existsSync(opencodeJsonDest)) {
       const raw = await readFile(opencodeJsonDest, 'utf-8');
       existing = JSON.parse(raw);
     }
 
-    // Produce merged config
     const merged = mergeOpencodeConfig(existing, providerName, flags.primary, flags.secondary, flags.exclude || []);
     const mergedJson = JSON.stringify(merged, null, 2) + '\n';
 
-    // Idempotency check
     if (existsSync(opencodeJsonDest)) {
       const existingRaw = await readFile(opencodeJsonDest, 'utf-8');
       if (_sha256Sync(existingRaw) === _sha256Sync(mergedJson)) {
@@ -823,25 +1049,52 @@ async function main() {
     summary.errors.push(`opencode.json: ${e.message}`);
     logErr(`Failed to process opencode.json: ${e.message}`);
   }
+}
 
-  // ═══════════════════════════════════════════════════════════
-  // STEP 5: Docker check (Phase 1 — informational only)
-  // ═══════════════════════════════════════════════════════════
-  if (flags.docker) {
-    logInfo('Checking Docker...');
-    const dockerAvailable = await dockerCheck();
-    if (dockerAvailable) {
-      printDockerInstructions();
+async function upgradeOpencodeJson(opencodeJsonDest, providerName, flags, summary, backupDir) {
+  logInfo('Upgrading opencode.json...');
+  try {
+    let existing = {};
+    if (existsSync(opencodeJsonDest)) {
+      const raw = await readFile(opencodeJsonDest, 'utf-8');
+      existing = JSON.parse(raw);
     }
-  }
 
-  // ═══════════════════════════════════════════════════════════
-  // STEP 6: Verification
-  // ═══════════════════════════════════════════════════════════
+    const merged = mergeOpencodeConfig(existing, providerName, flags.primary, flags.secondary, flags.exclude || []);
+    const mergedJson = JSON.stringify(merged, null, 2) + '\n';
+
+    if (existsSync(opencodeJsonDest)) {
+      const existingRaw = await readFile(opencodeJsonDest, 'utf-8');
+      if (_sha256Sync(existingRaw) === _sha256Sync(mergedJson)) {
+        summary.opencodeJson = 'SKIPPED';
+        logOk('opencode.json: SKIPPED (identical)');
+      } else {
+        if (!flags['dry-run']) {
+          await backupFile(opencodeJsonDest, backupDir, join('.opencode', 'opencode.json'));
+          await mkdir(dirname(opencodeJsonDest), { recursive: true });
+          await writeFile(opencodeJsonDest, mergedJson, 'utf-8');
+        }
+        summary.opencodeJson = 'UPDATED';
+        logOk('opencode.json: UPDATED');
+      }
+    } else {
+      if (!flags['dry-run']) {
+        await mkdir(dirname(opencodeJsonDest), { recursive: true });
+        await writeFile(opencodeJsonDest, mergedJson, 'utf-8');
+      }
+      summary.opencodeJson = 'CREATED';
+      logOk('opencode.json: CREATED');
+    }
+  } catch (e) {
+    summary.errors.push(`opencode.json: ${e.message}`);
+    logErr(`Failed to process opencode.json: ${e.message}`);
+  }
+}
+
+async function verifyInstall(agentsDestDir, skillsDestDir, opencodeJsonDest, summary, flags) {
   logInfo('Verifying installation...');
   let verificationPassed = true;
 
-  // Check agent file count
   if (existsSync(agentsDestDir) && !flags['dry-run']) {
     try {
       const destAgents = (await readdir(agentsDestDir)).filter(f => f.endsWith('.md'));
@@ -852,7 +1105,6 @@ async function main() {
     } catch { /* directory might not exist in dry run */ }
   }
 
-  // Check skill file count
   if (existsSync(skillsDestDir) && !flags['dry-run']) {
     let skillDirCount = 0;
     try {
@@ -867,11 +1119,10 @@ async function main() {
     } catch { /* directory might not exist in dry run */ }
   }
 
-  // Validate opencode.json is valid JSON
   if (existsSync(opencodeJsonDest) && !flags['dry-run']) {
     try {
       const raw = await readFile(opencodeJsonDest, 'utf-8');
-      JSON.parse(raw); // Will throw if invalid
+      JSON.parse(raw);
       logOk('opencode.json: valid JSON');
     } catch (e) {
       logErr(`opencode.json: INVALID JSON — ${e.message}`);
@@ -879,10 +1130,12 @@ async function main() {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // Print Summary Table
-  // ═══════════════════════════════════════════════════════════
-  console.log(`\n${ANSI.bold}━━━ Installation Summary ━━━${ANSI.reset}\n`);
+  return verificationPassed;
+}
+
+function printSummary(summary, flags, mode) {
+  const title = mode === 'upgrade' ? 'Upgrade Summary' : 'Installation Summary';
+  console.log(`\n${ANSI.bold}━━━ ${title} ━━━${ANSI.reset}\n`);
 
   console.log(`  ${ANSI.bold}Component${ANSI.reset}          ${ANSI.bold}Created${ANSI.reset}  ${ANSI.bold}Skipped${ANSI.reset}  ${ANSI.bold}Updated${ANSI.reset}  ${ANSI.bold}Total${ANSI.reset}`);
   console.log(`  ${'─'.repeat(55)}`);
@@ -890,6 +1143,10 @@ async function main() {
   console.log(`  Skill files         ${summary.skills.created.toString().padStart(5)}  ${summary.skills.skipped.toString().padStart(5)}  ${summary.skills.updated.toString().padStart(5)}  ${summary.skills.total.toString().padStart(5)}`);
   console.log(`  AGENTS.md               ${summary.agentsMd ? '✓' : '-'}                        `);
   console.log(`  opencode.json           ${summary.opencodeJson ? '✓' : '-'}                        `);
+
+  if (summary.backupDir && (summary.agents.updated > 0 || summary.skills.updated > 0 || summary.agentsMd === 'UPDATED' || summary.opencodeJson === 'UPDATED')) {
+    console.log(`\n  ${ANSI.cyan}Backups saved to: ${summary.backupDir}${ANSI.reset}`);
+  }
 
   if (summary.errors.length > 0) {
     console.log(`\n  ${ANSI.red}${ANSI.bold}Errors:${ANSI.reset}`);
@@ -901,14 +1158,13 @@ async function main() {
   console.log();
   if (flags['dry-run']) {
     logInfo('This was a dry run. No files were modified.');
-  } else if (verificationPassed && summary.errors.length === 0) {
-    logOk('Installation complete!');
-  } else if (!verificationPassed) {
+  } else if (summary.verificationPassed !== false && summary.errors.length === 0) {
+    logOk(mode === 'upgrade' ? 'Upgrade complete!' : 'Installation complete!');
+  } else if (summary.verificationPassed === false) {
     logWarn('Installation completed with verification issues.');
   }
 
   console.log();
-  process.exit(summary.errors.length > 0 ? 1 : 0);
 }
 
 // ── Run ──
