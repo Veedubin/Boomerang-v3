@@ -4,6 +4,27 @@ All notable changes to `@veedubin/boomerang-v3` are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.6.2] - 2026-07-13
+
+### Fixed
+- **`scripts/bumpversion` — neuralgentics marker_file fix**
+  The `marker_file` for `@veedubin/neuralgentics` was pointing at
+  `neuralgentics/package.json` (the root package), but the GitHub Actions
+  `release.yml` publishes from `overlay/packages/opencode/package.json`.
+  This caused `--audit` to read the wrong file and miss drift between the
+  two package.json files (root drifted to 0.9.0 while overlay was at 0.12.1
+  during the Session 45 recovery).
+  - Fix: `marker_file` and `canonical_file` now point at
+    `neuralgentics/overlay/packages/opencode/package.json`.
+  - Also: removed the unused `@neuralgentics/root` fallback entry (dead code
+    in production — the actual NPM name is `@veedubin/neuralgentics`).
+
+## [0.6.1] - 2026-07-13
+
+### Fixed
+- **`videre-mcp` install method**: switched from a broken local-path install
+  to PyPI via `uvx`, fixing the MCP server startup failure.
+
 ## [0.6.0] - 2026-07-13
 
 ### Added
