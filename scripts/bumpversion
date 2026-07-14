@@ -331,19 +331,10 @@ REPOS: list[RepoConfig] = [
     _npm(
         name="@veedubin/neuralgentics",
         subdir="neuralgentics",
-        canonical_file="package.json",
+        canonical_file="overlay/packages/opencode/package.json",
         npm_name="@veedubin/neuralgentics",
         github_repo="VeeDubin/neuralgentics",
-        marker_file="neuralgentics/package.json",
-    ),
-    # Fallback for the local @neuralgentics/root development name
-    _npm(
-        name="@neuralgentics/root",
-        subdir="neuralgentics",
-        canonical_file="package.json",
-        npm_name="@veedubin/neuralgentics",
-        github_repo="VeeDubin/neuralgentics",
-        marker_file="neuralgentics/package.json",
+        marker_file="neuralgentics/overlay/packages/opencode/package.json",
     ),
     _npm(
         name="@veedubin/super-memory-ts",
