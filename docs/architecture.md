@@ -17,14 +17,64 @@ standalone agent execution system.
 <!-- mermaid: dispatch-flow -->
 ```mermaid
 flowchart TD
-    A[User Request] --> B[Boomerang Orchestrator]
-    B --> C[Query memini-ai]
-    C --> D[Select Agent]
-    D --> E[Build Context Package]
-    E --> F[OpenCode Agent Runner]
-    F --> G[Sub-agent executes]
-    G --> H[Save to memini-ai]
-    H --> I[Return thin summary]
+    subgraph Input["Input"]
+        U["User Prompt"]
+    end
+
+    subgraph Orchestrator["Boomerang Orchestrator"]
+        S1["Step 1: Memory Query<br/>memini-ai-dev_query_memories"]
+        S2["Step 2: Thought Chain<br/>memini-ai-dev_add_thought"]
+        S3["Step 3: Plan<br/>create plan or<br/>delegate to architect"]
+        S4["Step 4: Delegate<br/>Task tool dispatch<br/>routing matrix<br/>parallel waves"]
+        S5["Step 5: Git Check<br/>verify working tree"]
+        S6["Step 6: Quality Gates<br/>lint → typecheck → test"]
+        S7["Step 7: Doc Update<br/>TASKS.md / AGENTS.md<br/>DocTracker SHA-256"]
+        S8["Step 8: Memory Save<br/>memini-ai-dev_add_memory"]
+    end
+
+    subgraph Sidecar["memini-ai Sidecar"]
+        MEM["memini-ai MCP Server<br/>PostgreSQL + pgvector<br/>trust engine + KG<br/>tiered L0/L1/L2"]
+    end
+
+    subgraph Pool["Sub-Agent Pool"]
+        ARCH["boomerang-architect<br/>design + research"]
+        CODER["boomerang-coder<br/>code implementation"]
+        TESTER["boomerang-tester<br/>test writing"]
+        LINTER["boomerang-linter<br/>quality enforcement"]
+        GIT["boomerang-git<br/>version control"]
+        WRITER["boomerang-writer<br/>documentation"]
+        EXPLORER["boomerang-explorer<br/>file finding"]
+    end
+
+    subgraph Output["Output"]
+        R["Response to User"]
+    end
+
+    U --> S1
+    S1 -->|"query"| MEM
+    MEM -->|"context"| S1
+    S1 --> S2
+    S2 --> S3
+    S3 -->|"plan ready"| S4
+    S3 -->|"needs design"| ARCH
+    ARCH -->|"design doc"| S3
+    S4 -->|"dispatch"| CODER
+    S4 -->|"dispatch"| TESTER
+    S4 -->|"dispatch"| LINTER
+    S4 -->|"dispatch"| GIT
+    S4 -->|"dispatch"| WRITER
+    S4 -->|"dispatch"| EXPLORER
+    CODER -->|"result"| S5
+    TESTER -->|"result"| S5
+    LINTER -->|"result"| S5
+    GIT -->|"result"| S5
+    WRITER -->|"result"| S5
+    EXPLORER -->|"result"| S5
+    S5 --> S6
+    S6 --> S7
+    S7 --> S8
+    S8 -->|"save"| MEM
+    S8 --> R
 ```
 
 The orchestrator is a **pure decision layer**:

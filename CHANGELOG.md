@@ -4,6 +4,13 @@ All notable changes to `@veedubin/boomerang-v3` are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+## [0.6.5] - 2026-07-21
+
+### Changed
+- **README Rewrite**: Replaced changelog-first README with elevator pitch + quickstart + features + architecture. Moved version history to CHANGELOG.md. Updated to reflect boomerang-v3 as the orchestrator layer in the ecosystem.
+
 ## [0.6.2] - 2026-07-13
 
 ### Fixed
@@ -192,6 +199,13 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - memini-ai integration: Trust engine, knowledge graph, tiered loading.
   PostgreSQL with pgvector backend. 645 tests passing in memini-ai.
 
+[Unreleased]: https://github.com/VeeDubin/Boomerang-v3/compare/v0.6.5...HEAD
+[0.6.5]: https://github.com/VeeDubin/Boomerang-v3/compare/v0.6.2...v0.6.5
+[0.6.2]: https://github.com/VeeDubin/Boomerang-v3/compare/v0.6.1...v0.6.2
+[0.6.1]: https://github.com/VeeDubin/Boomerang-v3/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/VeeDubin/Boomerang-v3/compare/v0.5.4...v0.6.0
+[0.5.4]: https://github.com/VeeDubin/Boomerang-v3/compare/v0.5.0...v0.5.4
+[0.5.0]: https://github.com/VeeDubin/Boomerang-v3/compare/v0.4.3...v0.5.0
 [0.4.3]: https://github.com/VeeDubin/Boomerang-v3/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/VeeDubin/Boomerang-v3/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/VeeDubin/Boomerang-v3/compare/v0.4.0...v0.4.1
@@ -199,3 +213,4 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 [0.3.2]: https://github.com/VeeDubin/Boomerang-v3/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/VeeDubin/Boomerang-v3/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/VeeDubin/Boomerang-v3/compare/v0.2.8...v0.3.0
+[3.0.0]: https://github.com/VeeDubin/Boomerang-v3/releases/tag/v3.0.0

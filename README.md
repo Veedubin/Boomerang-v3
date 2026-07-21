@@ -1,95 +1,149 @@
-# Boomerang-v3
+# Boomerang: Intelligent Multi-Agent Orchestration for OpenCode
 
+[![npm version](https://img.shields.io/npm/v/@veedubin/boomerang-v3.svg)](https://www.npmjs.com/package/@veedubin/boomerang-v3)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenCode Plugin](https://img.shields.io/badge/OpenCode-Plugin-ff6b35?style=flat-square)](https://opencode.ai)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square)](https://www.typescriptlang.org/)
-[![v0.5.2](https://img.shields.io/badge/v0.5.2-memini--ai-2ecc71?style=flat-square)](https://github.com/Veedubin/Boomerang-v3/releases/tag/v0.5.2)
 
-*Intelligent multi-agent coordination for OpenCode with memini-ai memory.*
+Boomerang is an **intelligent multi-agent orchestration plugin** for OpenCode. It acts as a routing brain that:
+- Picks the right specialist agent for every task
+- Arms agents with trust-weighted memory and context
+- Enforces an 8-step quality protocol for reliable execution
+- Integrates with memini-ai for persistent, semantic memory
 
----
+## What It Does
 
-## v3.0.0 Highlights
+- **Intelligent Routing**: Analyzes tasks and dispatches to 13 specialist agents (coder, architect, tester, writer, etc.)
+- **Trust-Weighted Memory**: Uses memini-ai to store and retrieve memories with trust scores (0.0-1.0)
+- **8-Step Protocol**: Enforces mandatory steps (memory query, planning, quality gates, doc updates, etc.)
+- **Parallel Execution**: Launches multiple sub-agents simultaneously for independent tasks
+- **Context Packages**: Builds rich context for sub-agents (files, snippets, constraints, expectations)
+- **Security**: Explicit tool allow-lists per agent (~57-73% token reduction vs wildcards)
+- **Skills**: Markdown-based skills loaded at runtime for specialized workflows
+- **Pre-Question Rule**: Dispatches architect to research before asking user clarifying questions
 
-> **NEW: memini-ai Integration** — Boomerang v3 uses memini-ai for memory, replacing Super-Memory-TS. memini-ai is a Python-based semantic memory server with PostgreSQL/pgvector backend.
+## Architecture
 
-| Feature | Description |
-|---------|-------------|
-| **Trust-Weighted Memory** | Every memory has a trust score (0.0-1.0), adjusted by agent feedback |
-| **Memory Graph** | Track relationships (SUPERSEDES, RELATED_TO, CONTRADICTS, DERIVED_FROM) |
-| **Knowledge Graph** | Entity extraction, inference chains, semantic relationships |
-| **Tiered Loading** | L0/L1/L2 summaries for efficient context loading |
-| **Contradiction Detection** | Find and resolve conflicting memories |
-| **PostgreSQL + pgvector** | Production-grade vector storage with streaming diskANN |
+Boomerang-v3 implements the **orchestrator** layer in this ecosystem:
 
----
+```mermaid
+flowchart LR
+    U[User] -->|prompt| OC[OpenCode TUI]
+    OC -->|task| ORCH["boomerang-v3<br/>Orchestrator<br/>12 personas + routing matrix"]
+    ORCH -->|query / save| MEM[("memini-ai<br/>trust-weighted memory<br/>PostgreSQL + pgvector")]
+    ORCH -->|dispatch| AG["Specialist sub-agents<br/>coder · architect · tester · writer"]
+    AG -->|"tool calls"| BRK["Neuralgentics Broker<br/>catalog · access control · audit"]
+    BRK --> MCP["MCP Servers<br/>searxng · github · videre · ssh"]
+    AG -->|outbound HTTP| GW["Neuralgentics Gateway<br/>egress policy + audit"]
+    GW --> NET["Internet / LLM APIs"]
+    MEM --> WEB["Neuralgentics Web<br/>dashboards"]
+    GW --> WEB
+    BRK --> WEB
+```
+
+[**View full architecture diagram**](https://veedubin.github.io/Boomerang-v3/architecture/)
+
+## Quickstart
+
+```bash
+npx @veedubin/boomerang-v3 --setup
+```
+
+This bootstraps:
+- 13 specialist agents (coder, architect, tester, writer, etc.)
+- Skills for common workflows
+- AGENTS.md with routing matrix
+- opencode.json patching for memini-ai integration
+
+**Provider Note**: Uses Ollama Cloud by default. See [docs/providers.md](https://github.com/Veedubin/Boomerang-v3/blob/main/docs/providers.md) for alternatives (local Ollama, Docker Model Runner, OpenAI, Anthropic, Google, OpenRouter).
 
 ## Features
 
-- **Trust-weighted memory context** — Memories have trust scores adjusted by usage
-- **Memory graph for decision tracking** — Track relationships between memories
-- **Tiered loading (L0/L1/L2)** — Efficient context abstraction
-- **Contradiction detection** — Find and resolve conflicting memories
-- **Knowledge graph integration** — Entity extraction and inference
-- **Thought Chains** — Structured reasoning traces for complex problem solving
-- **Multi-Peer & Dialectic Memory** — Collaborative memory sharing and dialectic resolution
-- **Python-based memini-ai** — Modern memory server with FastMCP ([PyPI](https://pypi.org/project/memini-ai-dev/))
+### Orchestration
+- **Routing Matrix**: Code-enforced rules for agent selection (e.g., code → `boomerang-coder`, research → `boomerang-architect`)
+- **13 Specialist Agents**: coder, architect, tester, writer, git, explorer, scraper, release, linter, mcp-specialist, researcher, agent-builder, handoff
+- **Parallel Dispatch**: Uses Kahn's algorithm for dependency-free parallel execution
+- **Context Packages**: Rich context for sub-agents (files, snippets, constraints, expectations)
 
----
+### Protocol
+- **8-Step Mandatory State Machine**: Memory query → Sequential think → Plan → Delegate → Git check → Quality gates → Doc update → Memory save
+- **Strictness Levels**: lenient (log suggestions), standard (log warnings), strict (block execution)
+- **Waiver Phrases**: `skip planning`, `just do it`, `no plan needed`, `skip tests`, `git is fine`, `--force`, `no docs needed`
+- **Pre-Question Rule**: Dispatches architect to research before asking user clarifying questions
 
-## Requirements
+### Memory
+- **memini-ai Integration**: MCP stdio interface to Python semantic memory server
+- **Trust Engine**: Memories start at trust=0.5, adjusted by feedback (`agent_used` +0.05, `user_corrected` -0.10)
+- **Memory Graph**: Relationships (SUPERSEDES, RELATED_TO, CONTRADICTS, DERIVED_FROM)
+- **Tiered Loading**: L0 (~100 tokens, high-trust), L1 (~2K tokens, key decisions), L2 (full context)
+- **Contradiction Detection**: Finds and resolves conflicting memories
+- **Thought Chains**: Structured reasoning traces for complex problem-solving
 
-- **Node.js** 18+
-- **Python** 3.11+ (for memini-ai)
-- **PostgreSQL** with pgvector (or Qdrant as fallback)
+### Security & Permissions
+- **Per-Agent Tool Allow-Lists**: No wildcards, explicit permissions for ~57-73% token reduction
+- **detect-secrets CI**: Scans for API keys, passwords, tokens in commits
+- **GitHub MCP**: Restricted to `boomerang-git` for remote operations (no `boomerang-release` access)
 
-### Optional: Live Visualization
+### Skills
+- **Markdown Skills**: Loaded at runtime for specialized workflows (e.g., `boomerang-release`, `kanban-board-manager`)
+- **Skill Self-Audit**: Detects repeated processes and formalizes them as skills
+- **Pre-Compaction Extraction**: Captures context before memory compaction
 
-memini-ai includes a live D3.js visualization for the knowledge graph:
+## Agent Roster
 
-```bash
-cd memini-ai-dev
-export MEMINI_DB_URL="postgresql://user:password@localhost:5432/postgres"  # Set your actual DB URL
-uvx --from memini-ai-dev memini-ai --server --port 8000
-```
+| Agent | Purpose | Model (Ollama Cloud) |
+|-------|---------|----------------------|
+| `boomerang` | Orchestration | kimi-k2.6 |
+| `boomerang-coder` | Code implementation | glm-5.2 |
+| `boomerang-architect` | Design decisions | deepseek-v4-pro |
+| `boomerang-tester` | Testing | deepseek-v4-flash |
+| `boomerang-writer` | Documentation | mistral-large-3:675b |
+| `boomerang-git` | Git operations | minimax-m3 |
+| `boomerang-explorer` | File finding | devstral-2:123b |
+| `boomerang-linter` | Linting/formatting | qwen3-coder-next |
+| `boomerang-scraper` | Web scraping | qwen3.5 |
+| `boomerang-release` | Release automation | devstral-small-2:24b |
+| `boomerang-agent-builder` | Skill/agent creation | glm-5.2 |
+| `boomerang-init` | Session initialization | kimi-k2.6 |
+| `boomerang-handoff` | Session wrap-up | kimi-k2.6 |
+| `mcp-specialist` | MCP/server debug | glm-5.2 |
+| `researcher` | Web research | kimi-k2.6 |
 
-Then open `http://localhost:8000` for the interactive graph visualization.
+[**Full agent roster and routing rules**](https://github.com/Veedubin/Boomerang-v3/blob/main/AGENTS.md)
 
----
+## Configuration
 
-## Installation
-
-```bash
-npm install @veedubin/boomerang-v3
-```
-
-### Configuration
-
-Add to your `.opencode/opencode.json`. If using **Ollama Cloud**, ensure your provider is configured with `baseURL: "https://ollama.com/v1"`.
+### Key `opencode.json` Settings
 
 ```json
 {
-  "plugin": ["@veedubin/boomerang-v3"],
+  "provider": {
+    "ollama": {
+      "name": "Ollama Cloud",
+      "api": "openai",
+      "options": {
+        "baseURL": "https://ollama.com/v1",
+        "apiKey": "YOUR_OLLAMA_CLOUD_API_KEY"
+      },
+      "models": {
+        "kimi-k2.6": { "name": "Kimi K2.6 (Cloud)" },
+        "glm-5.2": { "name": "GLM 5.2 (Cloud)" },
+        "mistral-large-3:675b": { "name": "Mistral Large 3 675B (Cloud)" }
+      }
+    }
+  },
   "mcp": {
     "memini-ai-dev": {
       "type": "local",
       "command": ["uvx", "--from", "memini-ai-dev", "memini-ai", "--stdio"],
       "environment": {
-        "MEMINI_DB_URL": "{env:MEMINI_DB_URL}",
-        "MEMINI_EMBEDDING_DIM": "384",
-        "MEMINI_TRUST_ENGINE": "true",
-        "MEMINI_MEMORY_GRAPH": "true",
-        "MEMINI_KG_ENABLED": "true",
-        "MEMINI_TIERED_LOADING": "true",
-        "MEMINI_AUTO_EXTRACT": "true",
-        "MEMINI_PRECOMPRESS": "true",
-        "MEMINI_USER_MODELING": "true",
-        "MEMINI_DECAY_ENABLED": "true",
-        "MEMINI_MULTI_PEER_ENABLED": "true",
-        "MEMINI_DIALECTIC_ENABLED": "true",
+        "MEMINI_DB_URL": "postgresql://postgres:password@localhost:5434/postgres",
+        "TRUST_ENGINE": "true",
+        "MEMORY_GRAPH": "true",
+        "KG_ENABLED": "true",
+        "TIERED_LOADING": "true",
         "THOUGHT_CHAINS": "true"
       },
-      "timeout": 60000,
       "enabled": true
     }
   }
@@ -100,218 +154,33 @@ Add to your `.opencode/opencode.json`. If using **Ollama Cloud**, ensure your pr
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `MEMINI_DB_URL` | PostgreSQL connection URL | Set via `.env` (see `.env.example`) |
-| `MEMINI_PROJECT_ID` | Project namespace | auto-generated |
-| `MEMINI_EMBEDDING_DIM` | 1024 or 384 | 1024 |
-| `MEMINI_DEVICE` | auto, gpu, cpu | auto |
-| `MEMINI_TRUST_ENGINE` | Enable trust scoring | false |
-| `MEMINI_MEMORY_GRAPH` | Enable memory graph | false |
-| `MEMINI_KG_ENABLED` | Enable knowledge graph | false |
+| `MEMINI_DB_URL` | PostgreSQL connection URL | `postgresql://postgres:password@localhost:5434/postgres` |
+| `MEMINI_PROJECT_ID` | Project namespace | Auto-generated |
+| `TRUST_ENGINE` | Enable trust scoring | `true` |
+| `MEMORY_GRAPH` | Enable memory graph | `true` |
+| `KG_ENABLED` | Enable knowledge graph | `true` |
+| `TIERED_LOADING` | Enable tiered loading | `true` |
+| `THOUGHT_CHAINS` | Enable thought chains | `true` |
 
----
+## Documentation
 
-## Quick Start with Docker Compose
+[**Full Documentation**](https://veedubin.github.io/Boomerang-v3/)
 
-### Start PostgreSQL with pgvector
+- [Architecture](https://veedubin.github.io/Boomerang-v3/architecture/)
+- [Agent Roster](https://veedubin.github.io/Boomerang-v3/agents/)
+- [Protocol](https://veedubin.github.io/Boomerang-v3/protocol/)
+- [Memory System](https://veedubin.github.io/Boomerang-v3/memory/)
+- [Providers](https://github.com/Veedubin/Boomerang-v3/blob/main/docs/providers.md)
 
-```bash
-docker run -d --name postgres-test \
-  -e POSTGRES_PASSWORD=password \
-  -p 5434:5432 \
-  timescale/timescaledb:latest-pg15
-```
-
-### Start memini-ai
+## Development
 
 ```bash
-cd memini-ai-dev
-export MEMINI_DB_URL="postgresql://user:password@localhost:5434/postgres"  # Set your actual DB URL
-uvx --from memini-ai-dev memini-ai --stdio
+npm install
+npm run build    # TypeScript → dist/
+npm run test     # vitest
+npm run typecheck # tsc --noEmit
 ```
-
-### Run Boomerang
-
-```bash
-npm run build
-npm run typecheck
-npm run lint
-npx vitest run
-```
-
----
-
-## Architecture
-
-### What Boomerang Is
-
-**Boomerang is an orchestration plugin for OpenCode, not a standalone agent execution system.**
-
-- **Boomerang's role**: Analyze requests, query memory, select appropriate agent, build rich Context Package
-- **OpenCode's role**: Handle agent execution natively using its own agent spawning mechanism
-- **memini-ai's role**: Persistent memory with trust scoring, knowledge graph, and tiered loading
-
-### How It Works
-
-```
-User Request
-      │
-      ▼
-┌─────────────────┐
-│  Boomerang      │  ← Pure decision layer
-│  Orchestrator    │     - Analyzes request
-│                  │     - Queries memini-ai
-│                  │     - Selects agent
-│                  │     - Builds Context Package
-└─────────────────┘
-      │
-      ▼ (Context Package returned to OpenCode)
-┌─────────────────┐
-│  OpenCode       │  ← Native agent execution
-│  Agent Runner   │     - Executes selected agent
-│                  │     - Handles lifecycle
-└─────────────────┘
-      │
-      ▼ (Memory operations via MCP)
-┌─────────────────┐
-│  memini-ai      │  ← Memory server
-│  (Python)       │     - Trust scoring
-│                  │     - Knowledge graph
-│                  │     - Tiered loading
-└─────────────────┘
-```
-
-### Orchestrator (Pure Decision Layer)
-
-The `BoomerangOrchestrator` class provides:
-
-| Method | Description |
-|--------|-------------|
-| `analyzeTask()` | Detect task type from request keywords |
-| `selectAgent()` | Choose appropriate agent based on task type |
-| `queryMemory()` | Search memini-ai for relevant context |
-| `buildContextPackage()` | Create rich context for sub-agent |
-| `orchestrate()` | Main entry — returns `{agent, systemPrompt, contextPackage, suggestions}` |
-
-### Context Package System
-
-Boomerang passes comprehensive context to sub-agents:
-- Original user request (verbatim)
-- Task background and constraints
-- Relevant files and code snippets
-- Expected output format
-- Scope boundaries and escalation targets
-
-This ensures sub-agents have everything they need to work effectively.
-
-### memini-ai Hub
-
-memini-ai is the central knowledge base:
-- **Query before responding** — Orchestrator checks memory for relevant context
-- **Save after completing** — Agents save detailed work to memory
-- **Thin responses** — Sub-agents return concise summaries + memory references
-- **Thick memory** — Full details stored for future retrieval with trust scoring
-
----
-
-## Memory System
-
-### Trust Engine
-
-Every memory starts at trust=0.5 and is adjusted based on feedback:
-
-| Signal | Trust Adjustment |
-|--------|------------------|
-| `agent_used` | +0.05 |
-| `user_confirmed` | +0.10 |
-| `agent_ignored` | -0.05 |
-| `user_corrected` | -0.10 |
-
-### Memory Graph
-
-Track relationships between memories:
-
-| Relationship | Description |
-|-------------|-------------|
-| `SUPERSEDES` | New memory replaces old one |
-| `RELATED_TO` | Memories are semantically related |
-| `CONTRADICTS` | Memories conflict |
-| `DERIVED_FROM` | Memory was derived from another |
-
-### Tiered Loading
-
-| Tier | Description | Use Case |
-|------|-------------|----------|
-| **L0 Summary** | ~100 tokens, high-trust memories only | Session start |
-| **L1 Key Decisions** | ~2K tokens, trust ≥ 0.8 | Planning |
-| **L2 Full Context** | All memories | Deep research |
-
-### Knowledge Graph
-
-memini-ai tracks entities and relationships:
-
-| Tool | Purpose |
-|------|---------|
-| `query_kg` | Execute formal KG queries |
-| `extract_entities` | Extract entities from a memory |
-| `get_entity_graph` | Get all connections for an entity |
-| `get_inference_chain` | Find inference paths between entities |
-
----
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `npm run build` | Build TypeScript to `dist/` |
-| `npm run typecheck` | Run TypeScript type checking |
-| `npm run lint` | Run ESLint |
-| `npx vitest run` | Run test suite |
-
----
-
-## Project Structure
-
-```
-boomerang-v3/
-├── src/
-│   ├── index.ts              # Plugin interface
-│   ├── orchestrator.ts       # Pure decision layer
-│   ├── protocol/             # ProtocolAdvisor (mandatory enforcement)
-│   ├── execution/            # TaskRunner (prompt builder only)
-│   └── agents/               # Agent definitions
-├── .opencode/
-│   └── skills/               # Skill definitions
-├── packages/
-│   └── opencode-plugin/      # OpenCode plugin package
-├── tests/                   # Test suite
-├── AGENTS.md                # Agent roster
-├── README.md                # This file
-└── package.json             # @veedubin/boomerang-v3
-```
-
----
-
-## Release History
-
-- **v0.5.2** — Adds `scripts/fix_perms.py` (root-cause fix for the Session 13 blank-line-after-tool agent YAML bug; idempotent, syncs all 3 agent locations to byte-identical content; available as `npm run fix-perms`). All 15 agent `.md` files normalized to canonical `permission.tool.memini-ai-dev_*` structure with proper frontmatter close. `.gitignore` adds Python `__pycache__/` for the new script. No public API change; recommended upgrade from v0.5.1 for anyone running the package locally.
-- **v0.5.1** — Critical fix: provider `ollama` was missing its `models` block in `opencode.json` (caused "Kimi K2.6 is not valid" / "ProviderModelNotFoundError"). Install script `PROVIDERS` table also fixed: removed bogus `:cloud` model-name suffix (Ollama API uses bare names), added `providerId` field so the CLI preset name (`ollama-cloud`) is decoupled from the generated `provider.{}` key (`ollama`). 15 agent `.md` files updated to reference `ollama/<model>` (no `ollama-cloud/` prefix, no `:cloud` suffix). 4 new regression tests added (131/131 pass).
-- **v0.5.0** — Agent permission overhaul: replaced wildcard tool patterns with explicit allow-lists per agent role. Security fix: boomerang-release no longer has GitHub MCP access (local-only). boomerang-git now has explicit GitHub MCP tools for remote operations. ~57-73% reduction in tool description tokens per request.
-- **v0.4.3** — Fixed critical env var mismatch for thought chains: `MEMINI_THOUGHT_CHAINS_ENABLED` → `THOUGHT_CHAINS`
-- **v0.4.2** — Removed deprecated `sequential-thinking` references, cleaned up orchestrator SKILL.md
-- **v0.4.1** — Documentation refresh, stale version references corrected across monorepo
-
----
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
-
----
-
-<div align="center">
-
-**Built with 🚀 by [Veedubin](https://github.com/Veedubin)**
-
-*Your AI development team, on demand.*
-
-</div>
+MIT
