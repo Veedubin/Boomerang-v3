@@ -99,10 +99,10 @@ This bootstraps:
 | `boomerang-tester` | Testing | deepseek-v4-flash |
 | `boomerang-writer` | Documentation | mistral-large-3:675b |
 | `boomerang-git` | Git operations | minimax-m3 |
-| `boomerang-explorer` | File finding | devstral-2:123b |
-| `boomerang-linter` | Linting/formatting | qwen3-coder-next |
+| `boomerang-explorer` | File finding | deepseek-v4-flash |
+| `boomerang-linter` | Linting/formatting | qwen3.5:397b |
 | `boomerang-scraper` | Web scraping | qwen3.5 |
-| `boomerang-release` | Release automation | devstral-small-2:24b |
+| `boomerang-release` | Release automation | minimax-m3 |
 | `boomerang-agent-builder` | Skill/agent creation | glm-5.2 |
 | `boomerang-init` | Session initialization | kimi-k2.6 |
 | `boomerang-handoff` | Session wrap-up | kimi-k2.6 |
