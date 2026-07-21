@@ -6,6 +6,12 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.9] - 2026-07-21
+
+### Fixed
+
+- Stale model names in the README agent table (`devstral-2:123b` → `deepseek-v4-flash`, `qwen3-coder-next` → `qwen3.5:397b`, `devstral-small-2:24b` → `minimax-m3`).
+
 ## [0.6.8] - 2026-07-21
 
 ### Fixed
