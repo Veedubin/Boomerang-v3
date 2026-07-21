@@ -6,6 +6,12 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.6] - 2026-07-21
+
+- **Docs**: mkdocs-material site + gh-pages deploy workflow (https://veedubin.github.io/Boomerang-v3/).
+- **Docs**: README rewritten — elevator pitch first, ecosystem mermaid, grouped features, agent roster table.
+- **Docs**: 8-step dispatch-flow mermaid diagram in docs/architecture.md.
+
 ## [0.6.5] - 2026-07-21
 
 ### Changed
