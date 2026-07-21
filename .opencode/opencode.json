@@ -21,26 +21,14 @@
         "deepseek-v4-pro": {
           "name": "DeepSeek V4 Pro (Cloud)"
         },
-        "devstral-2:123b": {
-          "name": "Devstral 2 123B (Cloud)"
-        },
         "deepseek-v4-flash": {
           "name": "DeepSeek V4 Flash (Cloud)"
-        },
-        "qwen3-coder-next": {
-          "name": "Qwen3 Coder Next (Cloud)"
         },
         "minimax-m2.7": {
           "name": "MiniMax M2.7 (Cloud)"
         },
         "gemma4:31b": {
           "name": "Gemma 4 31B (Cloud)"
-        },
-        "qwen3.5": {
-          "name": "Qwen 3.5 (Cloud)"
-        },
-        "devstral-small-2:24b": {
-          "name": "Devstral Small 2 24B (Cloud)"
         },
         "gemma3:4b": {
           "name": "Gemma 3 4B (Cloud)"
@@ -244,6 +232,7 @@
       ],
       "environment": {
         "MEMINI_DB_URL": "postgresql://postgres:password@localhost:5434/postgres",
+        "MEMINI_VECTOR_BACKEND": "postgres-external",
         "MEMINI_EMBEDDING_DIM": "384",
         "TRUST_ENGINE": "true",
         "MEMORY_GRAPH": "true",

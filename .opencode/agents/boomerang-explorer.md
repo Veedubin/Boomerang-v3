@@ -1,7 +1,7 @@
 ---
 description: Boomerang Explorer v3 - Fast file finding with memini-ai semantic search.
 mode: subagent
-model: ollama/devstral-2:123b
+model: ollama/deepseek-v4-flash
 steps: 300
 permission:
   read:

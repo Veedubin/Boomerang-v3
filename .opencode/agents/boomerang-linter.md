@@ -1,7 +1,7 @@
 ---
 description: Boomerang Linter v3 - Quality enforcement for boomerang-v3.
 mode: subagent
-model: ollama/qwen3-coder-next
+model: ollama/qwen3.5:397b
 steps: 300
 permission:
   read:
