@@ -31,6 +31,9 @@ npm-debug.log*
 # TypeScript incremental build
 *.tsbuildinfoarchive/
 
+# MkDocs build output
+site/
+
 # Python (for scripts/fix_perms.py)
 __pycache__/
 *.pyc
