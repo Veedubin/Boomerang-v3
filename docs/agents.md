@@ -10,20 +10,20 @@ allow-list of tools (no wildcards) and a tightly scoped job.
 | **boomerang** | boomerang-orchestrator | `kimi-k2.6` | Swarm-based task orchestration and proactive autonomous delegation. |
 | **boomerang-coder** | boomerang-coder | `glm-5.2` | Flagship for agentic engineering; SOTA on SWE-Bench Pro for complex multi-file generation. |
 | **boomerang-architect** | boomerang-architect | `deepseek-v4-pro` | Frontier reasoning with dedicated "thinking modes" for architectural trade-offs. |
-| **boomerang-explorer** | boomerang-explorer | `devstral-2:123b` | Designed to navigate codebases, trace dependencies, map repo structures. |
+| **boomerang-explorer** | boomerang-explorer | `deepseek-v4-flash` | Designed to navigate codebases, trace dependencies, map repo structures. |
 | **boomerang-tester** | boomerang-tester | `deepseek-v4-flash` | Massive 1M context window for ingesting deep error logs and codebase context. |
-| **boomerang-linter** | boomerang-linter | `qwen3-coder-next` | Optimised for agentic coding workflows; fast syntax formatting and style checks. |
+| **boomerang-linter** | boomerang-linter | `qwen3.5:397b` | Optimised for agentic coding workflows; fast syntax formatting and style checks. |
 | **boomerang-git** | boomerang-git | `minimax-m3` | Fast and reliable for structured terminal commands. |
 | **boomerang-writer** | boomerang-writer | `mistral-large-3:675b` | Frontier instruction following; clean readable Markdown. |
 | **boomerang-scraper** | boomerang-scraper | `qwen3.5` | Lightweight generalist with excellent tool-use for data extraction. |
-| **boomerang-release** | boomerang-release | `devstral-small-2:24b` | Fast 24B model for version bumps and changelogs. |
+| **boomerang-release** | boomerang-release | `minimax-m3` | Fast 24B model for version bumps and changelogs. |
 | **boomerang-agent-builder** | boomerang-agent-builder | `glm-5.2` | Long-horizon tasks and ambiguous problems; ideal for new agent logic. |
 | **researcher** | researcher | `kimi-k2.6` | Long-horizon research, data synthesis, multi-step tool execution. |
 | **mcp-specialist** | mcp-specialist | `glm-5.2` | SOTA on Terminal-Bench 2.0; best for debugging servers and tool protocols. |
 
 > **Note**: Models are configurable. Use
 > `install-agents.js --primary=<model> --secondary=<model>` to customise.
-> Model names in agent files use `ollama/<model>` format (no `:cloud`
+> Model names in agent files use `ollama/<model>` format (no ``
 > suffix).
 
 ### Lifecycle skills

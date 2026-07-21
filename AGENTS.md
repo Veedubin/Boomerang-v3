@@ -53,25 +53,25 @@ Failure to use memini-ai causes context loss, duplicate work, and wasted tokens.
 
 | Agent | Skill | Recommended Ollama Cloud Model | Technical Justification |
 |-------|-------|------------------------------|------------------------|
-| **boomerang** | boomerang-orchestrator | kimi-k2.6:cloud | Specifically built for swarm-based task orchestration and proactive autonomous delegation. |
-| **boomerang-coder** | boomerang-coder | glm-5.2:cloud | Flagship for agentic engineering; achieves SOTA on SWE-Bench Pro for complex, multi-file generation. |
-| **boomerang-architect** | boomerang-architect | deepseek-v4-pro:cloud | Offers frontier reasoning with dedicated "thinking modes" for analyzing complex architectural trade-offs. |
-| **boomerang-explorer** | boomerang-explorer | devstral-2:123b-cloud | Explicitly designed to navigate codebases, trace dependencies, and map repository structures. |
-| **boomerang-tester** | boomerang-tester | deepseek-v4-flash:cloud | Massive 1M context window for ingesting deep error logs and codebase context quickly and efficiently. |
-| **boomerang-linter** | boomerang-linter | qwen3-coder-next:cloud | Highly optimized for agentic coding workflows; blazing fast for syntax formatting and style checks. |
-| **boomerang-git** | boomerang-git | minimax-m3:cloud | Fast and highly reliable for standard professional productivity and executing structured terminal commands. |
+| **boomerang** | boomerang-orchestrator | kimi-k2.6 | Specifically built for swarm-based task orchestration and proactive autonomous delegation. |
+| **boomerang-coder** | boomerang-coder | glm-5.2 | Flagship for agentic engineering; achieves SOTA on SWE-Bench Pro for complex, multi-file generation. |
+| **boomerang-architect** | boomerang-architect | deepseek-v4-pro | Offers frontier reasoning with dedicated "thinking modes" for analyzing complex architectural trade-offs. |
+| **boomerang-explorer** | boomerang-explorer | deepseek-v4-flash | Explicitly designed to navigate codebases, trace dependencies, and map repository structures. |
+| **boomerang-tester** | boomerang-tester | deepseek-v4-flash | Massive 1M context window for ingesting deep error logs and codebase context quickly and efficiently. |
+| **boomerang-linter** | boomerang-linter | qwen3.5:397b | Highly optimized for agentic coding workflows; blazing fast for syntax formatting and style checks. |
+| **boomerang-git** | boomerang-git | minimax-m3 | Fast and highly reliable for standard professional productivity and executing structured terminal commands. |
 | **boomerang-writer** | boomerang-writer | mistral-large-3:675b-cloud | Frontier-level instruction following; excels at translating technical logic into clean, readable Markdown. |
-| **boomerang-scraper** | boomerang-scraper | qwen3.5:cloud | Strong, lightweight generalist with excellent tool-use capabilities for reliable data extraction. |
-| **boomerang-release** | boomerang-release | devstral-small-2:24b-cloud | Fast 24B model perfect for targeted automation tasks like bumping versions and summarizing changelogs. |
-| **boomerang-agent-builder** | boomerang-agent-builder | glm-5.2:cloud | Excels at long-horizon tasks and ambiguous problems; ideal for writing and optimizing new agent logic. |
-| **researcher** | researcher | kimi-k2.6:cloud | Advances practical capabilities in long-horizon research, data synthesis, and multi-step tool execution. |
-| **mcp-specialist** | mcp-specialist | glm-5.2:cloud | SOTA on Terminal-Bench 2.0; the most capable model for debugging servers and designing complex tool protocols. |
+| **boomerang-scraper** | boomerang-scraper | qwen3.5:397b | Strong, lightweight generalist with excellent tool-use capabilities for reliable data extraction. |
+| **boomerang-release** | boomerang-release | minimax-m3 | Fast 24B model perfect for targeted automation tasks like bumping versions and summarizing changelogs. |
+| **boomerang-agent-builder** | boomerang-agent-builder | glm-5.2 | Excels at long-horizon tasks and ambiguous problems; ideal for writing and optimizing new agent logic. |
+| **researcher** | researcher | kimi-k2.6 | Advances practical capabilities in long-horizon research, data synthesis, and multi-step tool execution. |
+| **mcp-specialist** | mcp-specialist | glm-5.2 | SOTA on Terminal-Bench 2.0; the most capable model for debugging servers and designing complex tool protocols. |
 
 | Skill | Purpose | Model |
 |-------|---------|-------|
-| **boomerang-init** | Initialize and personalize agents for a project | kimi-k2.6:cloud |
-| **boomerang-handoff** | Wrap-up session. Updates docs, saves context | kimi-k2.6:cloud |
-| **boomerang-agent-builder** | Build new skills and sub-agents from patterns | glm-5.2:cloud |
+| **boomerang-init** | Initialize and personalize agents for a project | kimi-k2.6 |
+| **boomerang-handoff** | Wrap-up session. Updates docs, saves context | kimi-k2.6 |
+| **boomerang-agent-builder** | Build new skills and sub-agents from patterns | glm-5.2 |
 
 ## Mandatory Routing Matrix (CODE-LEVEL ENFORCED)
 
@@ -112,20 +112,20 @@ The orchestrator MUST delegate based on these rules. No exceptions.
 
 | Task Type | → Primary Agent | Model | Never Delegate To |
 |-----------|------------------|-------|-------------------|
-| Complex planning / orchestration | `boomerang` | kimi-k2.6:cloud | `general` |
-| Architecture / design decisions | `boomerang-architect` | deepseek-v4-pro:cloud | `general`, `boomerang-coder` |
+| Complex planning / orchestration | `boomerang` | kimi-k2.6 | `general` |
+| Architecture / design decisions | `boomerang-architect` | deepseek-v4-pro | `general`, `boomerang-coder` |
 | Documentation writing | `boomerang-writer` | mistral-large-3:675b-cloud | `general` |
-| Session initialization | `boomerang-init` | kimi-k2.6:cloud | Everything else |
-| Session wrap-up / handoff | `boomerang-handoff` | kimi-k2.6:cloud | Everything else |
-| Skill/agent creation | `boomerang-agent-builder` | glm-5.2:cloud | `general` |
-| Fast code generation / bug fixes | `boomerang-coder` | glm-5.2:cloud | `general`, `boomerang-explorer` |
-| Code exploration / finding files | `boomerang-explorer` | devstral-2:123b-cloud | Everything else |
-| Writing / running tests | `boomerang-tester` | deepseek-v4-flash:cloud | `general`, `boomerang-coder` |
-| Linting / formatting | `boomerang-linter` | qwen3-coder-next:cloud | Everything else |
-| Git operations | `boomerang-git` | minimax-m3:cloud | Everything else |
-| Web research / scraping | `boomerang-scraper` | qwen3.5:cloud | `general` |
-| MCP tool design / server debug | `mcp-specialist` | glm-5.2:cloud | `general` |
-| Release automation | `boomerang-release` | devstral-small-2:24b-cloud | Everything else |
+| Session initialization | `boomerang-init` | kimi-k2.6 | Everything else |
+| Session wrap-up / handoff | `boomerang-handoff` | kimi-k2.6 | Everything else |
+| Skill/agent creation | `boomerang-agent-builder` | glm-5.2 | `general` |
+| Fast code generation / bug fixes | `boomerang-coder` | glm-5.2 | `general`, `boomerang-explorer` |
+| Code exploration / finding files | `boomerang-explorer` | deepseek-v4-flash | Everything else |
+| Writing / running tests | `boomerang-tester` | deepseek-v4-flash | `general`, `boomerang-coder` |
+| Linting / formatting | `boomerang-linter` | qwen3.5:397b | Everything else |
+| Git operations | `boomerang-git` | minimax-m3 | Everything else |
+| Web research / scraping | `boomerang-scraper` | qwen3.5:397b | `general` |
+| MCP tool design / server debug | `mcp-specialist` | glm-5.2 | `general` |
+| Release automation | `boomerang-release` | minimax-m3 | Everything else |
 
 > **Note**: User has Ollama Cloud with **10 concurrent model limit**. Models are configured via `install-agents.js --primary=<model> --secondary=<model>` or by editing `.opencode/opencode.json`.
 

@@ -26,7 +26,7 @@ or rejected (HTTP 503/429).
 │         ▼ (OpenCode spawns agents natively)                     │
 │  ┌──────────────┐    ┌──────────────┐                         │
 │  │ Sub-agent 1  │    │ Sub-agent 2  │                         │
-│  │ glm-5.2      │    │ devstral-2   │                         │
+│  │ glm-5.2      │    │ deepseek-v4  │                         │
 │  │  (1 slot)    │    │  (1 slot)    │                         │
 │  └──────────────┘    └──────────────┘                         │
 │       Total: 3 slots (MAXED OUT)                                  │

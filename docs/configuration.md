@@ -22,13 +22,13 @@ The default provider is **Ollama Cloud**. The minimum block:
         "kimi-k2.6":        { "name": "Kimi K2.6 (Cloud)" },
         "glm-5.2":          { "name": "GLM 5.2 (Cloud)" },
         "deepseek-v4-pro":  { "name": "DeepSeek V4 Pro (Cloud)" },
-        "devstral-2:123b":  { "name": "Devstral 2 123B (Cloud)" },
+        "deepseek-v4-flash":  { "name": "Devstral 2 123B (Cloud)" },
         "deepseek-v4-flash":{ "name": "DeepSeek V4 Flash (Cloud)" },
-        "qwen3-coder-next": { "name": "Qwen3 Coder Next (Cloud)" },
+        "qwen3.5:397b": { "name": "Qwen3 Coder Next (Cloud)" },
         "minimax-m3":       { "name": "MiniMax M3 (Cloud)" },
         "mistral-large-3:675b": { "name": "Mistral Large 3 675B (Cloud)" },
         "qwen3.5":          { "name": "Qwen3.5 (Cloud)" },
-        "devstral-small-2:24b": { "name": "Devstral Small 2 24B (Cloud)" }
+        "minimax-m3": { "name": "Devstral Small 2 24B (Cloud)" }
       }
     }
   }
