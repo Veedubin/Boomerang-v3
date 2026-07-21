@@ -6,6 +6,12 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.10] - 2026-07-21
+
+### Changed
+
+- README: ecosystem diagram now shows the first-class (memini-ai) vs brokered MCP server split.
+
 ## [0.6.9] - 2026-07-21
 
 ### Fixed
