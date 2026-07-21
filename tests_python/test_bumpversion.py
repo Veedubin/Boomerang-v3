@@ -794,5 +794,124 @@ class TestChangelogDrift(unittest.TestCase):
         self.assertEqual(key, "pyproject.toml")
 
 
+class TestGoModDetection(unittest.TestCase):
+    """T-I-011a: Go repos (neuralgentics-gateway, neuralgentics-broker)
+    are autodetected via their go.mod `module <path>` line, even from
+    arbitrarily-named clone directories outside the workspace root.
+    Strategy order: pyproject/package.json name match wins over go.mod;
+    go.mod wins over marker_file and subdir ancestor fallback."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.cwd = Path(self.tmp.name)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _write(self, relpath: str, content: str) -> None:
+        p = self.cwd / relpath
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(content)
+
+    def test_broker_detects_via_go_mod_from_arbitrary_dir_name(self):
+        # tmp dir named "random-clone-name" — does NOT match the
+        # broker registry entry's subdir ("neuralgentics-broker").
+        # Only the go.mod `module` line reveals which repo this is.
+        self._write("go.mod", "module github.com/Veedubin/neuralgentics-broker\n\n")
+        self._write("go.sum", "")
+        self._write(
+            "CHANGELOG.md",
+            "# Changelog — neuralgentics broker-go\n\n## [0.1.3] - 2026-07-21\n\nBody.\n",
+        )
+        repo = bumpversion.detect_repo(self.cwd)
+        self.assertEqual(repo.name, "neuralgentics-broker")
+        # read_all_versions should read the broker's 0.1.3 changelog version
+        versions = bumpversion.read_all_versions(self.cwd, repo)
+        self.assertEqual(versions["CHANGELOG.md"], "0.1.3")
+
+    def test_gateway_detects_via_go_mod_from_arbitrary_dir_name(self):
+        self._write("go.mod", "module github.com/Veedubin/neuralgentics-gateway\n\n")
+        self._write("go.sum", "")
+        self._write(
+            "CHANGELOG.md",
+            "# Changelog\n\n## [0.3.3] - 2026-07-21\n\nBody.\n",
+        )
+        repo = bumpversion.detect_repo(self.cwd)
+        self.assertEqual(repo.name, "neuralgentics-gateway")
+        versions = bumpversion.read_all_versions(self.cwd, repo)
+        self.assertEqual(versions["CHANGELOG.md"], "0.3.3")
+
+    def test_pyproject_name_match_wins_over_go_mod(self):
+        # Dir has BOTH a package.json matching an existing npm entry
+        # AND a go.mod that would match a Go entry. Strategy 1 (name
+        # match via pyproject/package.json) must win so the existing
+        # 10 repos continue to detect identically.
+        self._write(
+            "package.json",
+            '{\n  "name": "@veedubin/boomerang-v3",\n  "version": "0.6.11"\n}\n',
+        )
+        self._write("go.mod", "module github.com/Veedubin/neuralgentics-gateway\n\n")
+        repo = bumpversion.detect_repo(self.cwd)
+        # The npm entry wins (strategy 1), not the gateway go.mod entry
+        self.assertEqual(repo.name, "@veedubin/boomerang-v3")
+        self.assertIn("npm", repo.release_targets)
+
+    def test_no_go_mod_falls_through_to_existing_strategies(self):
+        # No go.mod → no go.mod strategy fires → falls through to the
+        # existing subdir-ancestor fallback. A subdir named
+        # "neuralgentics-gateway" (matching the registry subdir) with
+        # only a CHANGELOG.md should still detect via strategy 4.
+        # We use a nested subdir so the ancestor walk hits the name.
+        (self.cwd / "neuralgentics-gateway").mkdir()
+        (self.cwd / "neuralgentics-gateway" / "CHANGELOG.md").write_text(
+            "# Changelog\n\n## [0.3.3] - 2026-07-21\n\nBody.\n"
+        )
+        repo = bumpversion.detect_repo(self.cwd / "neuralgentics-gateway")
+        self.assertEqual(repo.name, "neuralgentics-gateway")
+
+    def test_go_mod_without_module_line_does_not_match(self):
+        # A go.mod with no `module <path>` directive is unparseable →
+        # the go.mod strategy is a no-op and falls through. We give
+        # it only a go.mod with garbage so no strategy fires → die.
+        self._write("go.mod", "# not a real go.mod\n\ngo 1.21\n")
+        # No pyproject, no package.json, no marker, no subdir ancestor
+        # match → detect_repo should die (SystemExit).
+        with self.assertRaises(SystemExit):
+            bumpversion.detect_repo(self.cwd)
+
+    def test_unknown_go_module_does_not_match_any_entry(self):
+        # A go.mod with a module path no registry entry claims → the
+        # go.mod strategy is a no-op, falls through to die (no
+        # pyproject/package.json/marker/subdir match either).
+        self._write("go.mod", "module github.com/example/some-other-repo\n\n")
+        with self.assertRaises(SystemExit):
+            bumpversion.detect_repo(self.cwd)
+
+
+class TestGoModRegistryFields(unittest.TestCase):
+    """The two Go registry entries carry the new go_mod_match field,
+    and all other entries leave it empty (no false positives)."""
+
+    def test_gateway_has_go_mod_match(self):
+        repo = next(r for r in bumpversion.REPOS if r.name == "neuralgentics-gateway")
+        self.assertEqual(repo.go_mod_match, "github.com/Veedubin/neuralgentics-gateway")
+
+    def test_broker_has_go_mod_match(self):
+        repo = next(r for r in bumpversion.REPOS if r.name == "neuralgentics-broker")
+        self.assertEqual(repo.go_mod_match, "github.com/Veedubin/neuralgentics-broker")
+
+    def test_non_go_repos_have_empty_go_mod_match(self):
+        # Every other registry entry (9 of 11) must leave go_mod_match
+        # unset so the go.mod strategy can never fire on them by accident.
+        for repo in bumpversion.REPOS:
+            if repo.name in ("neuralgentics-gateway", "neuralgentics-broker"):
+                continue
+            self.assertEqual(
+                repo.go_mod_match,
+                "",
+                f"{repo.name} unexpectedly has go_mod_match={repo.go_mod_match!r}",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

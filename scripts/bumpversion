@@ -34,6 +34,14 @@ Repos known (auto-detected by inspecting pyproject.toml name / package.json name
 # YYYY-MM-DD" heading as the version source. Both hyphen "-" and em-dash
 # "—" separators are accepted when reading; write_version only swaps the
 # version inside the brackets (the date and separator are preserved).
+#
+# Go repo autodetect: when a directory has a go.mod file but neither a
+# pyproject.toml nor a package.json (the Go repos neuralgentics-gateway
+# and neuralgentics-broker), detect_repo parses the `module <path>` line
+# and matches it against each registry entry's `go_mod_match` substring.
+# This makes Go repos detectable from arbitrarily-named clones (e.g.
+# /tmp/neuralgentics-extract-neuralgentics-broker) without relying on the
+# clone directory name matching the registry's `subdir` field.
 
 To add a new repo, append a RepoConfig entry. To add a new file to
 an existing repo, add a FileSpec to that repo's files list.
@@ -119,6 +127,12 @@ class RepoConfig:
     # Optional: path to a marker file that confirms this is the right repo
     # (e.g. "memini-ai-dev/pyproject.toml" for the memini-ai-dev repo)
     marker_file: str | None = None
+    # Optional: substring of the go.mod `module <path>` line, used to
+    # autodetect Go repos that have no pyproject.toml/package.json name
+    # to anchor on. When set, detect_repo reads cwd/go.mod (if present)
+    # and matches the parsed module path against this substring. Empty
+    # for non-Go repos (no go.mod detection).
+    go_mod_match: str = ""
     # Optional: subdirectory of the workspace root where the repo lives.
     # If set, when the user invokes bumpversion from the workspace root,
     # all file paths in `files` are interpreted relative to this subdir.
@@ -304,6 +318,7 @@ def _changelog(
     pypi_name: str | None = None,
     github_repo: str | None = None,
     marker_file: str | None = None,
+    go_mod_match: str = "",
     extra_files: list[FileSpec] | None = None,
 ) -> RepoConfig:
     """Build a RepoConfig for a changelog-canonical repo (Go repos, or
@@ -347,6 +362,7 @@ def _changelog(
         canonical=canonical_file,
         name_match=name,
         marker_file=marker_file,
+        go_mod_match=go_mod_match,
         subdir=subdir,
         pypi_name=pypi_name,
         github_repo=github_repo,
@@ -480,6 +496,7 @@ REPOS: list[RepoConfig] = [
         changelog_rel="CHANGELOG.md",
         github_repo="Veedubin/neuralgentics-gateway",
         marker_file=None,  # no pyproject/package.json name to anchor on
+        go_mod_match="github.com/Veedubin/neuralgentics-gateway",
     ),
     # neuralgentics-broker: Go repo. Same shape as gateway — canonical
     # version in CHANGELOG.md first heading (hyphen separator). Lives
@@ -491,6 +508,7 @@ REPOS: list[RepoConfig] = [
         changelog_rel="CHANGELOG.md",
         github_repo="Veedubin/neuralgentics-broker",
         marker_file=None,  # /tmp clone, outside workspace root
+        go_mod_match="github.com/Veedubin/neuralgentics-broker",
     ),
 ]
 
@@ -648,6 +666,21 @@ def _read_local_name(cwd: Path) -> tuple[str | None, str | None]:
     return None, None
 
 
+# Regex for the go.mod `module <path>` directive. Matches the first
+# occurrence at the start of a line (go.mod is line-oriented).
+GO_MOD_MODULE_RE = re.compile(r"^module\s+(\S+)", re.MULTILINE)
+
+
+def _read_module_from_go_mod(cwd: Path) -> str | None:
+    """Read the module path from cwd/go.mod. Returns None if the file
+    is missing or has no `module <path>` directive."""
+    go_mod = cwd / "go.mod"
+    if not go_mod.exists():
+        return None
+    m = GO_MOD_MODULE_RE.search(go_mod.read_text(encoding="utf-8", errors="replace"))
+    return m.group(1) if m else None
+
+
 def detect_repo(cwd: Path) -> RepoConfig:
     """Detect which known repo we're in.
 
@@ -656,11 +689,20 @@ def detect_repo(cwd: Path) -> RepoConfig:
          matches a registry entry, use that entry. The repo's
          `subdir` is the cwd's directory name (which equals `subdir`
          in the registry when running from inside the repo).
-      2. Otherwise (running from the workspace root, e.g.
+      2. Otherwise, if cwd has a go.mod file, parse its `module <path>`
+         line and match against registry entries with a `go_mod_match`
+         substring. Used for Go repos (neuralgentics-gateway,
+         neuralgentics-broker) that have no pyproject/package.json name
+         to anchor on and may live in arbitrarily-named clones outside
+         the workspace root.
+      3. Otherwise (running from the workspace root, e.g.
          /home/jcharles/Projects/MCP-Servers), check `marker_file` for
          each registry entry. marker_file is the path relative to
          the workspace root (e.g. 'boomerang-v3/package.json').
-      3. If neither works, die.
+      4. If none of the above work, fall back to checking whether the
+         cwd's directory name (or any ancestor's) matches a registry
+         entry's subdir.
+      5. If still none matched, die.
     """
     # Strategy 1: local name match (running inside a repo)
     local_name, _ = _read_local_name(cwd)
@@ -676,12 +718,21 @@ def detect_repo(cwd: Path) -> RepoConfig:
             matches.sort(key=lambda r: len(r.name_match), reverse=True)
             return matches[0]
 
-    # Strategy 2: workspace-root marker file match
+    # Strategy 2: go.mod module-path match (Go repos with no
+    # pyproject/package.json name to anchor on, e.g. /tmp clones with
+    # arbitrary directory names).
+    go_module = _read_module_from_go_mod(cwd)
+    if go_module is not None:
+        for repo in REPOS:
+            if repo.go_mod_match and repo.go_mod_match in go_module:
+                return repo
+
+    # Strategy 3: workspace-root marker file match
     for repo in REPOS:
         if repo.marker_file and (cwd / repo.marker_file).exists():
             return repo
 
-    # Strategy 3: directory-name fallback. If the cwd's directory
+    # Strategy 4: directory-name fallback. If the cwd's directory
     # name (or any ancestor's) matches a registry entry's subdir,
     # use that. Handles renamed packages where the local package
     # name no longer contains the registry's name_match.
