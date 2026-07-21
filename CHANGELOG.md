@@ -6,7 +6,11 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [0.6.6] - 2026-07-21
+## [0.6.7] - 2026-07-21
+
+### Fixed
+
+- **Agent model remap to API-verified Ollama Cloud models.** Devstral models were pulled from Ollama Cloud and `qwen3-coder-next` never existed in the API — agents referencing them failed at dispatch time (observed as empty sub-agent results). Remapped: linter → `qwen3.5:397b`, release → `minimax-m3`, explorer → `deepseek-v4-flash`, scraper → `qwen3.5:397b`. Stale entries removed from `opencode.json` and `install-boomerang.js` PROVIDERS; memini LLM defaults now `minimax-m3`.## [0.6.6] - 2026-07-21
 
 - **Docs**: mkdocs-material site + gh-pages deploy workflow (https://veedubin.github.io/Boomerang-v3/).
 - **Docs**: README rewritten — elevator pitch first, ecosystem mermaid, grouped features, agent roster table.
