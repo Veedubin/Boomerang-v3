@@ -529,5 +529,270 @@ class TestCmdAudit(unittest.TestCase):
         self.assertEqual(rc, 1)
 
 
+class TestChangelogPattern(unittest.TestCase):
+    """Tests for the CHANGELOG_HEADING regex (read side)."""
+
+    def test_read_hyphen_separator(self):
+        with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as f:
+            f.write("# Changelog\n\n## [0.3.3] - 2026-07-21\n\nBody.\n")
+            f.flush()
+            try:
+                v = bumpversion.read_version_from_file(
+                    Path(f.name), bumpversion.CHANGELOG_HEADING
+                )
+                self.assertEqual(v, "0.3.3")
+            finally:
+                os.unlink(f.name)
+
+    def test_read_em_dash_separator(self):
+        # neuralgentics-web uses an em-dash "—" between version and date
+        with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as f:
+            f.write("# Changelog\n\n## [0.15.2] — 2026-07-21\n\nBody.\n")
+            f.flush()
+            try:
+                v = bumpversion.read_version_from_file(
+                    Path(f.name), bumpversion.CHANGELOG_HEADING
+                )
+                self.assertEqual(v, "0.15.2")
+            finally:
+                os.unlink(f.name)
+
+    def test_read_first_heading_only(self):
+        # re.search returns the FIRST match — the top-most heading wins
+        with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as f:
+            f.write(
+                "# Changelog\n\n"
+                "## [1.2.3] - 2026-07-21\n\nNewer.\n\n"
+                "## [1.2.2] - 2026-07-20\n\nOlder.\n"
+            )
+            f.flush()
+            try:
+                v = bumpversion.read_version_from_file(
+                    Path(f.name), bumpversion.CHANGELOG_HEADING
+                )
+                self.assertEqual(v, "1.2.3")
+            finally:
+                os.unlink(f.name)
+
+    def test_read_no_match(self):
+        with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as f:
+            f.write("# Changelog\n\nNo version headings here.\n")
+            f.flush()
+            try:
+                v = bumpversion.read_version_from_file(
+                    Path(f.name), bumpversion.CHANGELOG_HEADING
+                )
+                self.assertIsNone(v)
+            finally:
+                os.unlink(f.name)
+
+
+class TestChangelogWriteRoundTrip(unittest.TestCase):
+    """write_version on a changelog-canonical repo swaps only the
+    version inside the first heading — date and separator preserved."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.cwd = Path(self.tmp.name)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_write_hyphen_preserves_date(self):
+        (self.cwd / "CHANGELOG.md").write_text(
+            "# Changelog\n\n## [0.3.3] - 2026-07-21\n\nBody.\n"
+        )
+        repo = bumpversion.RepoConfig(
+            name="test-cl",
+            canonical="CHANGELOG.md",
+            name_match="test-cl",
+            files=[
+                bumpversion.FileSpec(
+                    relpath="CHANGELOG.md",
+                    pattern=bumpversion.CHANGELOG_HEADING,
+                    replacement=r"\g<1>{version}\g<3>",
+                )
+            ],
+        )
+        n = bumpversion.write_version(self.cwd, repo, "0.3.4")
+        self.assertEqual(n, 1)
+        content = (self.cwd / "CHANGELOG.md").read_text()
+        self.assertIn("## [0.3.4] - 2026-07-21", content)
+        self.assertNotIn("## [0.3.3]", content)
+        # Date and separator untouched
+        self.assertIn("- 2026-07-21", content)
+
+    def test_write_em_dash_preserves_date(self):
+        (self.cwd / "CHANGELOG.md").write_text(
+            "# Changelog\n\n## [0.15.2] — 2026-07-21\n\nBody.\n"
+        )
+        repo = bumpversion.RepoConfig(
+            name="test-cl",
+            canonical="CHANGELOG.md",
+            name_match="test-cl",
+            files=[
+                bumpversion.FileSpec(
+                    relpath="CHANGELOG.md",
+                    pattern=bumpversion.CHANGELOG_HEADING,
+                    replacement=r"\g<1>{version}\g<3>",
+                )
+            ],
+        )
+        n = bumpversion.write_version(self.cwd, repo, "0.15.3")
+        self.assertEqual(n, 1)
+        content = (self.cwd / "CHANGELOG.md").read_text()
+        self.assertIn("## [0.15.3] — 2026-07-21", content)
+        # Em-dash and date preserved
+        self.assertIn("— 2026-07-21", content)
+
+
+class TestNewRepoRegistry(unittest.TestCase):
+    """The three new repos (web, gateway, broker) are in REPOS with
+    the expected shape."""
+
+    def test_three_new_repos_present(self):
+        names = {r.name for r in bumpversion.REPOS}
+        self.assertIn("neuralgentics-web", names)
+        self.assertIn("neuralgentics-gateway", names)
+        self.assertIn("neuralgentics-broker", names)
+        # Total is now 11 (8 original + 3 new)
+        self.assertEqual(len(bumpversion.REPOS), 11)
+
+    def test_web_repo_shape(self):
+        repo = next(r for r in bumpversion.REPOS if r.name == "neuralgentics-web")
+        # Canonical = pyproject.toml (PyPI source of truth)
+        self.assertEqual(repo.canonical, "pyproject.toml")
+        self.assertEqual(repo.pypi_name, "neuralgentics-web")
+        self.assertEqual(repo.github_repo, "Veedubin/neuralgentics-web")
+        # Tracks both pyproject.toml and CHANGELOG.md in lockstep
+        relpaths = {f.relpath for f in repo.files}
+        self.assertEqual(relpaths, {"pyproject.toml", "CHANGELOG.md"})
+        # CHANGELOG FileSpec uses the changelog heading pattern
+        cl = next(f for f in repo.files if f.relpath == "CHANGELOG.md")
+        self.assertIs(cl.pattern, bumpversion.CHANGELOG_HEADING)
+        # pyproject FileSpec uses the pyproject pattern
+        pp = next(f for f in repo.files if f.relpath == "pyproject.toml")
+        self.assertIs(pp.pattern, bumpversion.PY_PYPROJECT)
+        # /tmp clone — no workspace-root marker
+        self.assertIsNone(repo.marker_file)
+        # autodetect via pyproject `name` match
+        self.assertEqual(repo.name_match, "neuralgentics-web")
+
+    def test_gateway_repo_shape(self):
+        repo = next(r for r in bumpversion.REPOS if r.name == "neuralgentics-gateway")
+        # Go repo — no PyPI/npm
+        self.assertIsNone(repo.pypi_name)
+        self.assertIsNone(repo.npm_name)
+        self.assertEqual(repo.github_repo, "Veedubin/neuralgentics-gateway")
+        # Canonical = CHANGELOG.md (only file)
+        self.assertEqual(repo.canonical, "CHANGELOG.md")
+        self.assertEqual(len(repo.files), 1)
+        self.assertEqual(repo.files[0].relpath, "CHANGELOG.md")
+        self.assertIs(repo.files[0].pattern, bumpversion.CHANGELOG_HEADING)
+        # No marker_file (no pyproject/package.json name to anchor on)
+        self.assertIsNone(repo.marker_file)
+        self.assertEqual(repo.subdir, "neuralgentics-gateway")
+
+    def test_broker_repo_shape(self):
+        repo = next(r for r in bumpversion.REPOS if r.name == "neuralgentics-broker")
+        self.assertIsNone(repo.pypi_name)
+        self.assertIsNone(repo.npm_name)
+        self.assertEqual(repo.github_repo, "Veedubin/neuralgentics-broker")
+        self.assertEqual(repo.canonical, "CHANGELOG.md")
+        self.assertEqual(len(repo.files), 1)
+        self.assertIsNone(repo.marker_file)
+        self.assertEqual(repo.subdir, "neuralgentics-broker")
+
+
+class TestReadVersionFromRepoFiles(unittest.TestCase):
+    """read_all_versions reads the correct version from each new
+    repo's canonical file, using tmp fixtures that mirror the real
+    on-disk layouts (the real clones in /tmp and the gateway repo are
+    NOT touched)."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.cwd = Path(self.tmp.name)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _write(self, relpath: str, content: str) -> None:
+        p = self.cwd / relpath
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(content)
+
+    def test_read_web_repo_versions(self):
+        # Mirror neuralgentics-web layout: pyproject.toml + em-dash CHANGELOG
+        self._write(
+            "pyproject.toml",
+            '[project]\nname = "neuralgentics-web"\nversion = "0.15.2"\n',
+        )
+        self._write(
+            "CHANGELOG.md",
+            "# Changelog\n\n## [0.15.2] — 2026-07-21\n\nBody.\n",
+        )
+        repo = next(r for r in bumpversion.REPOS if r.name == "neuralgentics-web")
+        versions = bumpversion.read_all_versions(self.cwd, repo)
+        self.assertEqual(versions["pyproject.toml"], "0.15.2")
+        self.assertEqual(versions["CHANGELOG.md"], "0.15.2")
+
+    def test_read_gateway_repo_version(self):
+        # Mirror neuralgentics-gateway layout: only CHANGELOG.md (hyphen)
+        self._write(
+            "CHANGELOG.md",
+            "# Changelog\n\n## [0.3.3] - 2026-07-21\n\nBody.\n",
+        )
+        repo = next(r for r in bumpversion.REPOS if r.name == "neuralgentics-gateway")
+        versions = bumpversion.read_all_versions(self.cwd, repo)
+        self.assertEqual(versions["CHANGELOG.md"], "0.3.3")
+
+    def test_read_broker_repo_version(self):
+        # Mirror neuralgentics-broker layout: only CHANGELOG.md (hyphen)
+        self._write(
+            "CHANGELOG.md",
+            "# Changelog — neuralgentics broker-go\n\n## [0.1.3] - 2026-07-21\n\nBody.\n",
+        )
+        repo = next(r for r in bumpversion.REPOS if r.name == "neuralgentics-broker")
+        versions = bumpversion.read_all_versions(self.cwd, repo)
+        self.assertEqual(versions["CHANGELOG.md"], "0.1.3")
+
+
+class TestChangelogDrift(unittest.TestCase):
+    """Drift detection on a changelog-canonical repo (gateway shape)."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.cwd = Path(self.tmp.name)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_no_drift_single_file(self):
+        (self.cwd / "CHANGELOG.md").write_text(
+            "# Changelog\n\n## [0.3.3] - 2026-07-21\n\nBody.\n"
+        )
+        repo = next(r for r in bumpversion.REPOS if r.name == "neuralgentics-gateway")
+        drifted, canonical, key = bumpversion.check_drift(self.cwd, repo)
+        self.assertFalse(drifted)
+        self.assertEqual(canonical, "0.3.3")
+        self.assertEqual(key, "CHANGELOG.md")
+
+    def test_drift_web_pyproject_vs_changelog(self):
+        # web repo: pyproject says 0.15.2, CHANGELOG says 0.15.1 → drift
+        (self.cwd / "pyproject.toml").write_text(
+            '[project]\nname = "neuralgentics-web"\nversion = "0.15.2"\n'
+        )
+        (self.cwd / "CHANGELOG.md").write_text(
+            "# Changelog\n\n## [0.15.1] — 2026-07-21\n\nBody.\n"
+        )
+        repo = next(r for r in bumpversion.REPOS if r.name == "neuralgentics-web")
+        drifted, canonical, key = bumpversion.check_drift(self.cwd, repo)
+        # canonical is pyproject.toml (first file) = 0.15.2; CHANGELOG = 0.15.1 → drift
+        self.assertTrue(drifted)
+        self.assertEqual(canonical, "0.15.2")
+        self.assertEqual(key, "pyproject.toml")
+
+
 if __name__ == "__main__":
     unittest.main()

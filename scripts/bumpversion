@@ -25,6 +25,16 @@ Repos known (auto-detected by inspecting pyproject.toml name / package.json name
   attacklm-dataset             : python  →  GH release (no PyPI; data bundle)
   attacklm                     : python  →  PyPI (Hatchling dynamic version)
 
+#   neuralgentics-web            : python (pyproject) + changelog  ->  PyPI + GH
+#   neuralgentics-gateway        : changelog (Go repo, no code version)  ->  GH
+#   neuralgentics-broker         : changelog (Go repo, no code version)  ->  GH
+#
+# Changelog-canonical repos (Go repos with no version in code, or Python
+# repos that ALSO track a CHANGELOG.md) use the first "## [X.Y.Z] <sep>
+# YYYY-MM-DD" heading as the version source. Both hyphen "-" and em-dash
+# "—" separators are accepted when reading; write_version only swaps the
+# version inside the brackets (the date and separator are preserved).
+
 To add a new repo, append a RepoConfig entry. To add a new file to
 an existing repo, add a FileSpec to that repo's files list.
 
@@ -183,6 +193,23 @@ NPM_PACKAGE_JSON = re.compile(
     r'(")',  # group 3: suffix
 )
 
+# Changelog: first "## [X.Y.Z] <sep> DATE" heading.
+# Accepts both hyphen "-" and em-dash "—" as the date separator (the
+# neuralgentics-web repo uses "—" while the Go repos use "-").
+# `re.search` returns the FIRST match, so this always reads the most
+# recent (top-most) release heading. The replacement template only
+# swaps the version inside the brackets; the date and separator are
+# preserved untouched (release notes / new dated headings are written
+# by humans — bumpversion just keeps the version string in lockstep).
+CHANGELOG_HEADING = re.compile(
+    r"^(##\s*\[)"  # group 1: prefix "## ["
+    r"(\d+\.\d+\.\d+)"  # group 2: version
+    r"(\]"  # group 3: closing "]" + optional sep + date
+    r"[ \t]*[-—][ \t]*"  # separator: hyphen or em-dash, with spaces
+    r"\d{4}-\d{2}-\d{2})",  # the YYYY-MM-DD date
+    re.MULTILINE,
+)
+
 
 # ---------------------------------------------------------------------------
 # Helper: build a RepoConfig from a small dict (less boilerplate below)
@@ -265,6 +292,65 @@ def _npm(
                 replacement=r"\g<1>{version}\g<3>",
             ),
         ],
+    )
+
+
+def _changelog(
+    name: str,
+    subdir: str,
+    *,
+    canonical_file: str = "CHANGELOG.md",
+    changelog_rel: str = "CHANGELOG.md",
+    pypi_name: str | None = None,
+    github_repo: str | None = None,
+    marker_file: str | None = None,
+    extra_files: list[FileSpec] | None = None,
+) -> RepoConfig:
+    """Build a RepoConfig for a changelog-canonical repo (Go repos, or
+    any repo whose version source of truth is the first CHANGELOG.md
+    release heading).
+
+    The CHANGELOG.md heading is the canonical version source. The
+    `changelog_rel` file is bumped in lockstep with the canonical file
+    (defaults to the same file, so only one file is tracked unless
+    `extra_files` adds more — e.g. a pyproject.toml for a Python repo
+    that ALSO keeps a CHANGELOG).
+
+    Args:
+        name: registry name (also used for autodetect via name_match)
+        subdir: directory name of the repo (used for ancestor fallback
+                in detect_repo; for /tmp clones outside the workspace
+                root this is the dir name bumpversion is run from)
+        canonical_file: relpath to the canonical CHANGELOG.md
+        changelog_rel: relpath to the changelog FileSpec (defaults to
+                       canonical_file so only one file is tracked)
+        pypi_name: PyPI project name (or None)
+        github_repo: GitHub owner/repo (or None)
+        marker_file: workspace-root-relative marker (or None for repos
+                     outside the workspace root — autodetect then relies
+                     on name_match / subdir ancestor fallback)
+        extra_files: additional FileSpecs to bump in lockstep (e.g. a
+                     pyproject.toml for a Python repo that also tracks
+                     a CHANGELOG)
+    """
+    files: list[FileSpec] = [
+        FileSpec(
+            relpath=changelog_rel,
+            pattern=CHANGELOG_HEADING,
+            replacement=r"\g<1>{version}\g<3>",
+        )
+    ]
+    if extra_files:
+        files.extend(extra_files)
+    return RepoConfig(
+        name=name,
+        canonical=canonical_file,
+        name_match=name,
+        marker_file=marker_file,
+        subdir=subdir,
+        pypi_name=pypi_name,
+        github_repo=github_repo,
+        files=files,
     )
 
 
@@ -351,6 +437,60 @@ REPOS: list[RepoConfig] = [
         npm_name="@fangjunjie/ssh-mcp-server",
         github_repo="classfang/ssh-mcp-server",
         marker_file="ssh-mcp-server/package.json",
+    ),
+    # === Changelog-canonical repos ===
+    # neuralgentics-web: standalone Python repo. Canonical version in
+    # pyproject.toml (PyPI source of truth), with its em-dash CHANGELOG.md
+    # kept in lockstep as a second tracked file. pypi_name set so --audit
+    # checks PyPI (published from the monorepo today; standalone migration
+    # is a separate pending card). Lives in a /tmp clone outside the
+    # workspace root, so marker_file=None and autodetect relies on the
+    # pyproject `name` match.
+    RepoConfig(
+        name="neuralgentics-web",
+        canonical="pyproject.toml",
+        name_match="neuralgentics-web",
+        marker_file=None,  # /tmp clone, outside workspace root
+        subdir="neuralgentics-web",
+        pypi_name="neuralgentics-web",
+        github_repo="Veedubin/neuralgentics-web",
+        files=[
+            FileSpec(
+                relpath="pyproject.toml",
+                pattern=PY_PYPROJECT,
+                replacement=r"\g<1>{version}\g<3>",
+            ),
+            FileSpec(
+                relpath="CHANGELOG.md",
+                pattern=CHANGELOG_HEADING,
+                replacement=r"\g<1>{version}\g<3>",
+            ),
+        ],
+    ),
+    # neuralgentics-gateway: Go repo. NO version file in code — the
+    # canonical version source is the first CHANGELOG.md release
+    # heading (hyphen separator). Lives inside the workspace root
+    # (/home/jcharles/Projects/MCP-Servers/neuralgentics-gateway) but
+    # has no pyproject/package.json `name` to match, so autodetect
+    # relies on the subdir ancestor-name fallback in detect_repo.
+    _changelog(
+        name="neuralgentics-gateway",
+        subdir="neuralgentics-gateway",
+        canonical_file="CHANGELOG.md",
+        changelog_rel="CHANGELOG.md",
+        github_repo="Veedubin/neuralgentics-gateway",
+        marker_file=None,  # no pyproject/package.json name to anchor on
+    ),
+    # neuralgentics-broker: Go repo. Same shape as gateway — canonical
+    # version in CHANGELOG.md first heading (hyphen separator). Lives
+    # in a /tmp clone outside the workspace root.
+    _changelog(
+        name="neuralgentics-broker",
+        subdir="neuralgentics-broker",
+        canonical_file="CHANGELOG.md",
+        changelog_rel="CHANGELOG.md",
+        github_repo="Veedubin/neuralgentics-broker",
+        marker_file=None,  # /tmp clone, outside workspace root
     ),
 ]
 
