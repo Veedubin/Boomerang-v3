@@ -6,6 +6,12 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.8] - 2026-07-21
+
+### Fixed
+
+- **Docs sync**: roster tables and config examples in `AGENTS.md` and `docs/` updated to the API-verified model names from v0.6.7 (`:cloud` suffixes stripped; retired devstral/qwen3-coder-next references remapped).
+
 ## [0.6.7] - 2026-07-21
 
 ### Fixed
